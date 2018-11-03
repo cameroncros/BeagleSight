@@ -29,6 +29,14 @@ public class BowConfig {
     private String description = "";
     private final List<PositionPair> positionArray = new ArrayList<>();
     PositionCalculator positionCalculator = null;
+    
+    private static class XML_TAGS {
+        private static final String BOW = "bow";
+        private static final String ID = "id";
+        private static final String DESCRIPTION = "description";
+        private static final String NAME = "name";
+        private static final String POSITION = "position";
+    }
 
     public BowConfig(String name, String description) {
         initPositionCalculator();
@@ -44,23 +52,23 @@ public class BowConfig {
         InputSource inputSource = new InputSource(stream);
         Document document = db.parse(inputSource);
 
-        NodeList nodelist = document.getElementsByTagName("bow");
+        NodeList nodelist = document.getElementsByTagName(XML_TAGS.BOW);
         for (int i = 0; i < nodelist.getLength(); i++) {
             Node e = nodelist.item(i);
             NodeList children = e.getChildNodes();
             for (int j = 0; j < children.getLength(); j++) {
                 Node nd = children.item(j);
                 switch (nd.getNodeName()) {
-                    case "id":
+                    case XML_TAGS.ID:
                         id = nd.getTextContent();
                         break;
-                    case "name":
+                    case XML_TAGS.NAME:
                         name = nd.getTextContent();
                         break;
-                    case "description":
+                    case XML_TAGS.DESCRIPTION:
                         description = nd.getTextContent();
                         break;
-                    case "position":
+                    case XML_TAGS.POSITION:
                         String values = nd.getTextContent();
                         String parts[] = values.split(",");
                         try {
@@ -84,23 +92,23 @@ public class BowConfig {
             serializer.startDocument(null, Boolean.TRUE);
             serializer.setFeature("http://xmlpull.org/v1/doc/features.html#indent-output", true);
 
-            serializer.startTag(null, "bow");
-            serializer.startTag(null, "id");
+            serializer.startTag(null, XML_TAGS.BOW);
+            serializer.startTag(null, XML_TAGS.ID);
             serializer.text(id);
-            serializer.endTag(null, "id");
-            serializer.startTag(null, "name");
+            serializer.endTag(null, XML_TAGS.ID);
+            serializer.startTag(null, XML_TAGS.NAME);
             serializer.text(name);
-            serializer.endTag(null, "name");
-            serializer.startTag(null, "description");
+            serializer.endTag(null, XML_TAGS.NAME);
+            serializer.startTag(null, XML_TAGS.DESCRIPTION);
             serializer.text(description);
-            serializer.endTag(null, "description");
+            serializer.endTag(null, XML_TAGS.DESCRIPTION);
 
             for (PositionPair pair : positionArray) {
-                serializer.startTag(null, "position");
+                serializer.startTag(null, XML_TAGS.POSITION);
                 serializer.text(pair.toString());
-                serializer.endTag(null, "position");
+                serializer.endTag(null, XML_TAGS.POSITION);
             }
-            serializer.endTag(null, "bow");
+            serializer.endTag(null, XML_TAGS.BOW);
             serializer.endDocument();
             serializer.flush();
             fileOS.close();
