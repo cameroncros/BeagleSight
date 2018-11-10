@@ -17,4 +17,9 @@
     <string name="add">Add</string>
     <string name="failed_find_bow_settings">Failed to find bow settings</string>
     <string name="delete_position">Delete Position</string>
+    <string name="target">Target:</string>
+    <string name="see_configured_bows">Configured Bows</string>
+    <string name="see_nearby_targets">Target Map</string>
+    <string name="waiting_for_location">Waiting for location…</string>
+    <string name="title_activity_target_map">Target Map</string>
 </resources>
