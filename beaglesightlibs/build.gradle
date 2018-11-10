@@ -18,6 +18,13 @@ android {
         targetSdkVersion 28
         versionCode project.versionCode
         versionName project.versionName
+
+        // Write out the current schema of Room
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments = ["room.schemaLocation": "$projectDir/schemas".toString()]
+            }
+        }
     }
     buildTypes {
         release {
@@ -41,4 +48,7 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.1.0'
     testRuntimeOnly'org.junit.jupiter:junit-jupiter-engine:5.1.0'
     implementation 'com.google.android.gms:play-services-wearable:16.0.1'
+    implementation 'com.google.android.gms:play-services-maps:16.0.0'
+    implementation 'androidx.room:room-runtime:2.0.0'
+    annotationProcessor 'androidx.room:room-compiler:2.0.0'
 }
