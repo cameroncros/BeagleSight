@@ -2,12 +2,18 @@ package com.cross.beaglesightlibs;
 
 import android.location.Location;
 import android.os.Build;
+import android.os.Parcel;
+import android.os.Parcelable;
 
 import com.google.android.gms.maps.model.LatLng;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.UUID;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.room.ColumnInfo;
 import androidx.room.Dao;
 import androidx.room.Delete;
@@ -22,11 +28,11 @@ import static androidx.room.ForeignKey.CASCADE;
 import static java.lang.Math.atan;
 
 @Entity(foreignKeys = @ForeignKey(entity = Target.class,
-                                  parentColumns = "id",
-                                  childColumns = "targetId",
-                                  onDelete = CASCADE),
+        parentColumns = "id",
+        childColumns = "targetId",
+        onDelete = CASCADE),
         indices = @Index("targetId"))
-public class LocationDescription {
+public class LocationDescription implements Parcelable {
     @PrimaryKey
     @NonNull
     private String locationId;
@@ -40,13 +46,12 @@ public class LocationDescription {
     @ColumnInfo(name = "location_description")
     private String description;
 
-    public LocationDescription()
-    {
-
+    public LocationDescription() {
+        this.locationId = UUID.randomUUID().toString();
     }
 
-    public LocationDescription(Location location, String description)
-    {
+    public LocationDescription(Location location, String description) {
+        super();
         this.latitude = location.getLatitude();
         this.longitude = location.getLongitude();
         this.altitude = location.getAltitude();
@@ -55,11 +60,64 @@ public class LocationDescription {
             this.altitude_accuracy = location.getVerticalAccuracyMeters();
         }
         this.description = description;
+
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof LocationDescription)) return false;
+        LocationDescription that = (LocationDescription) o;
+        return Double.compare(that.latitude, latitude) == 0 &&
+                Double.compare(that.longitude, longitude) == 0 &&
+                Float.compare(that.latlng_accuracy, latlng_accuracy) == 0 &&
+                Double.compare(that.altitude, altitude) == 0 &&
+                Float.compare(that.altitude_accuracy, altitude_accuracy) == 0 &&
+                Objects.equals(locationId, that.locationId) &&
+                Objects.equals(targetId, that.targetId) &&
+                Objects.equals(description, that.description);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(locationId, targetId, latitude, longitude, latlng_accuracy, altitude, altitude_accuracy, description);
     }
 
     public LocationDescription(Location currentLocation) {
         this(currentLocation, "");
     }
+
+    public LocationDescription(Parcel in) {
+        String[] data = new String[8];
+
+        in.readStringArray(data);
+        // the order needs to be the same as in writeToParcel() method
+        this.latitude = Double.parseDouble(data[0]);
+        this.longitude = Double.parseDouble(data[1]);
+        this.altitude = Double.parseDouble(data[2]);
+
+        this.latlng_accuracy = Float.parseFloat(data[3]);
+        this.altitude_accuracy = Float.parseFloat(data[4]);
+
+        this.locationId = data[5];
+        this.targetId = data[6];
+        this.description = data[7];
+    }
+
+    public static final Creator<LocationDescription> CREATOR = new Creator<LocationDescription>() {
+        @Override
+        public LocationDescription createFromParcel(Parcel in) {
+            return new LocationDescription(in);
+        }
+
+        @Override
+        public LocationDescription[] newArray(int size) {
+            return new LocationDescription[size];
+        }
+    };
 
     public String getLocationId() {
         return locationId;
@@ -93,13 +151,11 @@ public class LocationDescription {
         this.longitude = longitude;
     }
 
-    public LatLng getLatLng()
-    {
+    public LatLng getLatLng() {
         return new LatLng(latitude, longitude);
     }
 
-    public void setLatLng(LatLng latlng)
-    {
+    public void setLatLng(LatLng latlng) {
         this.latitude = latlng.latitude;
         this.longitude = latlng.longitude;
 
@@ -139,6 +195,7 @@ public class LocationDescription {
 
     /**
      * Get the distance to a location
+     *
      * @param location The location to calculate the distance to
      * @return Distance in meters
      */
@@ -151,14 +208,42 @@ public class LocationDescription {
 
     /**
      * Get angle to the target
+     *
      * @param pos position to the target
      * @return Angle in degrees to the target. Positive means aiming uphill.
      */
     public double pitchTo(LocationDescription pos) {
         double distance = distanceTo(pos);
-        double elevation = altitude-pos.altitude;
-        double radians = atan(elevation/distance);
-        return radians*180/Math.PI;
+        double elevation = altitude - pos.altitude;
+        double radians = atan(elevation / distance);
+        return radians * 180 / Math.PI;
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel parcel, int i) {
+        parcel.writeStringArray(new String[]{
+                Double.toString(this.latitude),
+                Double.toString(this.longitude),
+                Double.toString(this.altitude),
+
+                Float.toString(this.latlng_accuracy),
+                Float.toString(this.altitude_accuracy),
+
+                this.locationId,
+                this.targetId,
+                this.description,
+        });
+    }
+
+    public String getLocationString() {
+        return String.format(Locale.ENGLISH,
+                "Lat: %.03f Long: %.03f Alt: %.02f",
+                latitude, longitude, altitude);
     }
 
     @Dao

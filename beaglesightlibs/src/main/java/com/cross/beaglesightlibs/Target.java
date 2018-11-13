@@ -1,9 +1,15 @@
 package com.cross.beaglesightlibs;
 
+import android.os.Build;
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.room.ColumnInfo;
 import androidx.room.Dao;
 import androidx.room.Delete;
@@ -25,6 +31,11 @@ public class Target {
 
     @Embedded
     private LocationDescription targetLocation;
+
+    public Target()
+    {
+        id=UUID.randomUUID().toString();
+    }
 
     public String getId() {
         return id;
@@ -70,4 +81,24 @@ public class Target {
         @Delete
         void delete(Target user);
     }
+
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Target)) return false;
+        Target target = (Target) o;
+        return builtin == target.builtin &&
+                Objects.equals(id, target.id) &&
+                Objects.equals(name, target.name) &&
+                Objects.equals(targetLocation, target.targetLocation);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(id, name, builtin, targetLocation);
+    }
+
 }

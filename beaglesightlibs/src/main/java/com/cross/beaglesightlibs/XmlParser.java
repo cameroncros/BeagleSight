@@ -1,13 +1,18 @@
 package com.cross.beaglesightlibs;
 
+import android.util.Log;
+import android.util.Xml;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import org.xmlpull.v1.XmlSerializer;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -92,13 +97,13 @@ public class XmlParser {
                     locDesc.setDescription(nd.getTextContent());
                     break;
                 case XML_TAGS.LATITUDE:
-                    locDesc.setLatitude(Float.parseFloat(nd.getTextContent()));
+                    locDesc.setLatitude(Double.parseDouble(nd.getTextContent()));
                     break;
                 case XML_TAGS.LONGITUDE:
-                    locDesc.setLongitude(Float.parseFloat(nd.getTextContent()));
+                    locDesc.setLongitude(Double.parseDouble(nd.getTextContent()));
                     break;
                 case XML_TAGS.ALTITUDE:
-                    locDesc.setAltitude(Float.parseFloat(nd.getTextContent()));
+                    locDesc.setAltitude(Double.parseDouble(nd.getTextContent()));
                     break;
                 case XML_TAGS.LAT_LNG_ACCURACY:
                     locDesc.setLatlng_accuracy(Float.parseFloat(nd.getTextContent()));
@@ -109,5 +114,72 @@ public class XmlParser {
             }
         }
         return locDesc;
+    }
+
+    public static void serialiseTarget(OutputStream stream, Target target, List<LocationDescription> shootPositions) throws IOException {
+        XmlSerializer serializer = Xml.newSerializer();
+        serializer.setOutput(stream, "UTF-8");
+        serializer.startDocument(null, Boolean.TRUE);
+        serializer.setFeature("http://xmlpull.org/v1/doc/features.html#indent-output", true);
+
+        serializer.startTag(null, XML_TAGS.TARGET);
+        serializer.startTag(null, XML_TAGS.ID);
+        serializer.text(target.getId());
+        serializer.endTag(null, XML_TAGS.ID);
+        serializer.startTag(null, XML_TAGS.NAME);
+        serializer.text(target.getName());
+        serializer.endTag(null, XML_TAGS.NAME);
+        serializer.startTag(null, XML_TAGS.BUILTIN);
+        serializer.text(target.getName());
+        serializer.endTag(null, XML_TAGS.BUILTIN);
+
+
+        serializer.startTag(null, XML_TAGS.LOCATION);
+        serialiseLocation(serializer, target.getTargetLocation());
+        serializer.endTag(null, XML_TAGS.LOCATION);
+
+        for (LocationDescription locationDescription : shootPositions) {
+            serializer.startTag(null, XML_TAGS.SHOOT_POSITION);
+            serialiseLocation(serializer, locationDescription);
+            serializer.endTag(null, XML_TAGS.SHOOT_POSITION);
+        }
+
+        serializer.endTag(null, XML_TAGS.TARGET);
+        serializer.endDocument();
+        serializer.flush();
+    }
+
+    private static void serialiseLocation(XmlSerializer serializer, LocationDescription locationDescription) throws IOException {
+        serializer.startTag(null, XML_TAGS.ID);
+        serializer.text(locationDescription.getLocationId());
+        serializer.endTag(null, XML_TAGS.ID);
+
+        serializer.startTag(null, XML_TAGS.TARGET_ID);
+        serializer.text(locationDescription.getTargetId());
+        serializer.endTag(null, XML_TAGS.TARGET_ID);
+
+        serializer.startTag(null, XML_TAGS.DESCRIPTION);
+        serializer.text(locationDescription.getDescription());
+        serializer.endTag(null, XML_TAGS.DESCRIPTION);
+
+        serializer.startTag(null, XML_TAGS.LATITUDE);
+        serializer.text(Double.toString(locationDescription.getLatitude()));
+        serializer.endTag(null, XML_TAGS.LATITUDE);
+
+        serializer.startTag(null, XML_TAGS.LONGITUDE);
+        serializer.text(Double.toString(locationDescription.getLongitude()));
+        serializer.endTag(null, XML_TAGS.LONGITUDE);
+
+        serializer.startTag(null, XML_TAGS.ALTITUDE);
+        serializer.text(Double.toString(locationDescription.getAltitude()));
+        serializer.endTag(null, XML_TAGS.ALTITUDE);
+
+        serializer.startTag(null, XML_TAGS.LAT_LNG_ACCURACY);
+        serializer.text(Float.toString(locationDescription.getLatlng_accuracy()));
+        serializer.endTag(null, XML_TAGS.LAT_LNG_ACCURACY);
+
+        serializer.startTag(null, XML_TAGS.ALTITUDE_ACCURACY);
+        serializer.text(Float.toString(locationDescription.getAltitude_accuracy()));
+        serializer.endTag(null, XML_TAGS.ALTITUDE_ACCURACY);
     }
 }
