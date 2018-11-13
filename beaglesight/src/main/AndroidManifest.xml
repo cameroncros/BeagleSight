@@ -66,6 +66,24 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.cross.beaglesight.StartActivity" />
         </activity>
+        <activity
+            android:name=".EditTarget"
+            android:label="@string/title_activity_edit_target"
+            android:parentActivityName=".TargetMap"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.cross.beaglesight.TargetMap" />
+        </activity>
+        <activity
+            android:name=".EditLocation"
+            android:label="@string/title_activity_edit_location"
+            android:parentActivityName=".EditTarget"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.cross.beaglesight.EditTarget" />
+        </activity>
         <provider
             android:name="androidx.core.content.FileProvider"
             android:grantUriPermissions="true"

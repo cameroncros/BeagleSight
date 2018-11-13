@@ -91,7 +91,6 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                     && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
                 String[] permissions = new String[]{Manifest.permission.ACCESS_FINE_LOCATION,
                         Manifest.permission.ACCESS_COARSE_LOCATION};
                 ActivityCompat.requestPermissions(this, permissions, 1);
@@ -111,14 +110,14 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
             }
         });
 
-//        final Intent addTarget = new Intent(this, EditTarget.class);
-//        FloatingActionButton addButton = findViewById(R.id.addTarget);
-//        addButton.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                startActivity(addTarget);
-//            }
-//        });
+        final Intent addTarget = new Intent(this, EditTarget.class);
+        FloatingActionButton addButton = findViewById(R.id.addTarget);
+        addButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startActivity(addTarget);
+            }
+        });
 
     }
 
