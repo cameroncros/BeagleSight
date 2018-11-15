@@ -10,7 +10,10 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.cross.beaglesightlibs.LocationDescription;
@@ -23,7 +26,6 @@ import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
-import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -49,6 +51,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
     private LocationManager locationManager;
     private Boolean trackLocation = true;
     private Location currentLocation = null;
+    private ProgressBar progressBar;
     private FloatingActionButton refocusButton;
     private Map<Target, List<LocationDescription>> targetListMap = new HashMap<>();
     private Map<Marker, Target> markerOptionsTargetMap = new HashMap<>();
@@ -87,38 +90,43 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         // Initialise TargetManager
         tm = TargetManager.getInstance(this);
 
-        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                    && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                String[] permissions = new String[]{Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.ACCESS_COARSE_LOCATION};
-                ActivityCompat.requestPermissions(this, permissions, 1);
-                return;
-            }
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
-        }
+        progressBar = findViewById(R.id.fabProgress);
 
         refocusButton = findViewById(R.id.refocus);
         refocusButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 trackLocation = true;
-                refocusButton.hide();
-                refocusButton.invalidate();
+                progressBar.setVisibility(View.VISIBLE);
+                progressBar.invalidate();
                 focusMap();
             }
         });
+    }
 
-        final Intent addTarget = new Intent(this, EditTarget.class);
-        FloatingActionButton addButton = findViewById(R.id.addTarget);
-        addButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                startActivity(addTarget);
-            }
-        });
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_sight_list, menu);
+        return true;
+    }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        switch (id)
+        {
+            case R.id.action_add:
+                startActivity(new Intent(this, EditTarget.class));
+                return true;
+            case R.id.action_import:
+                //TODO: startActivity(new Intent(this, ImportTargets.class));
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     @SuppressLint("MissingPermission")
@@ -151,6 +159,22 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         mMap.setOnMarkerClickListener(this);
         mMap.setOnCameraMoveStartedListener(this);
         mMap.setMinZoomPreference(15);
+
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                    && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                String[] permissions = new String[]{
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                };
+                ActivityCompat.requestPermissions(this, permissions, 1);
+                return;
+            }
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
+            mMap.setMyLocationEnabled(true);
+        }
+
         LatLng latLng = new LatLng(-37.625729, 145.130766);
         CameraPosition cameraPosition = new CameraPosition(latLng, 15, 0, 0);
         mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
@@ -197,15 +221,15 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
 
                 mMap.clear();
 
-                // TODO: Draw current location.
-                if (currentLocation != null)
-                {
-                    LatLng latLng = new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude());
-                    mMap.addMarker(new MarkerOptions()
-                            .position(latLng)
-                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
-                    mMap.addCircle(new CircleOptions().center(latLng).radius(currentLocation.getAccuracy()));
-                }
+//                // TODO: Draw current location.
+//                if (currentLocation != null)
+//                {
+//                    LatLng latLng = new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude());
+//                    mMap.addMarker(new MarkerOptions()
+//                            .position(latLng)
+//                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
+//                    mMap.addCircle(new CircleOptions().center(latLng).radius(currentLocation.getAccuracy()));
+//                }
 
                 Set<Target> targets = targetListMap.keySet();
                 for (Target target : targets) {
@@ -218,16 +242,18 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
                     markerOptionsTargetMap.put(targetMarker, target);
 
                     List<LocationDescription> shootLocations = targetListMap.get(target);
-                    for (LocationDescription shootLocation : shootLocations) {
-                        LatLng shootPos = shootLocation.getLatLng();
-                        Marker shootMarker = mMap.addMarker(new MarkerOptions()
-                                .position(shootPos)
-                                .title(shootLocation.getDescription())
-                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_CYAN)));
-                        markerOptionsTargetMap.put(shootMarker, target);
-                        markerOptionsLocationDescriptionMap.put(shootMarker, shootLocation);
+                    if (shootLocations != null) {
+                        for (LocationDescription shootLocation : shootLocations) {
+                            LatLng shootPos = shootLocation.getLatLng();
+                            Marker shootMarker = mMap.addMarker(new MarkerOptions()
+                                    .position(shootPos)
+                                    .title(shootLocation.getDescription())
+                                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_CYAN)));
+                            markerOptionsTargetMap.put(shootMarker, target);
+                            markerOptionsLocationDescriptionMap.put(shootMarker, shootLocation);
 
-                        mMap.addPolyline(new PolylineOptions().add(shootPos).add(targetPos));
+                            mMap.addPolyline(new PolylineOptions().add(shootPos).add(targetPos));
+                        }
                     }
                 }
             }
@@ -247,13 +273,17 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
     @Override
     public void onLocationChanged(Location location) {
         currentLocation = location;
+        progressBar.setVisibility(View.GONE);
+        progressBar.invalidate();
+        refocusButton.hide();
+        refocusButton.invalidate();
         focusMap();
         updateTargetInfo();
     }
 
     @Override
     public void onStatusChanged(String s, int i, Bundle bundle) {
-        // TODO
+
     }
 
     @Override
@@ -274,7 +304,6 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
             refocusButton.invalidate();
             targetInfo.setVisibility(GONE);
             targetInfo.invalidate();
-
         }
     }
 
@@ -327,4 +356,6 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         }
         targetInfo.invalidate();
     }
+
+
 }
