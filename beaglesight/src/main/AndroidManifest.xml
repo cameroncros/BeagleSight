@@ -28,7 +28,7 @@
         </activity>
         <activity
             android:name=".SightList"
-            android:label="@string/title_activity_show_sight"
+            android:label="@string/title_activity_sight_list"
             android:parentActivityName=".SightList"
             android:theme="@style/AppTheme.NoActionBar">
             <meta-data
