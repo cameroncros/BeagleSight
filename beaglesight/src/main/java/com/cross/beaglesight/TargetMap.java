@@ -5,20 +5,26 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.provider.MediaStore;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.cross.beaglesightlibs.LocationDescription;
 import com.cross.beaglesightlibs.Target;
 import com.cross.beaglesightlibs.TargetManager;
+import com.cross.beaglesightlibs.XmlParser;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
@@ -32,20 +38,31 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import org.xml.sax.SAXException;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import javax.xml.parsers.ParserConfigurationException;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.FileProvider;
 
 import static android.view.View.GONE;
 
 public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, LocationListener, GoogleMap.OnCameraMoveStartedListener, GoogleMap.OnMarkerClickListener {
+    private static final int FILE_SELECT_CODE = 1;
     private volatile GoogleMap mMap = null;
     private TargetManager tm;
     private LocationManager locationManager;
@@ -107,7 +124,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_sight_list, menu);
+        getMenuInflater().inflate(R.menu.menu_target_map, menu);
         return true;
     }
 
@@ -122,7 +139,48 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
                 startActivity(new Intent(this, EditTarget.class));
                 return true;
             case R.id.action_import:
-                //TODO: startActivity(new Intent(this, ImportTargets.class));
+                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                    String[] permissions = new String[]{
+                            Manifest.permission.READ_EXTERNAL_STORAGE
+                    };
+                    ActivityCompat.requestPermissions(this, permissions, 1);
+                    return true;
+                }
+                importConfig();
+                return true;
+            case R.id.action_export:
+                AsyncTask.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        File outputDir = getCacheDir();
+                        Intent shareIntent = new Intent(Intent.ACTION_SEND_MULTIPLE);
+                        shareIntent.setType("text/xml");
+                        ArrayList<Uri> uris = new ArrayList<>();
+
+                        for (Target target : tm.targetDao().getAll()) {
+                            List<LocationDescription> shootPositions = tm.locationDescriptionDao().getLocationsForTarget(target.getId());
+
+                            try {
+                                String filename = target.getId();
+
+                                File outputFile = File.createTempFile("Target_" + filename, ".xml", outputDir);
+                                FileOutputStream fos = new FileOutputStream(outputFile);
+                                XmlParser.serialiseTarget(fos, target, shootPositions);
+
+                                Uri uri = FileProvider.getUriForFile(getApplicationContext(), BuildConfig.APPLICATION_ID, outputFile);
+                                uris.add(uri);
+
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        shareIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris);
+                        startActivity(Intent.createChooser(shareIntent, "Export Configs"));
+                    }
+                });
+                return true;
+            case R.id.action_update:
+                //startActivity(new Intent(this, SyncTargets.class));
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -220,16 +278,6 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
                 }
 
                 mMap.clear();
-
-//                // TODO: Draw current location.
-//                if (currentLocation != null)
-//                {
-//                    LatLng latLng = new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude());
-//                    mMap.addMarker(new MarkerOptions()
-//                            .position(latLng)
-//                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
-//                    mMap.addCircle(new CircleOptions().center(latLng).radius(currentLocation.getAccuracy()));
-//                }
 
                 Set<Target> targets = targetListMap.keySet();
                 for (Target target : targets) {
@@ -357,5 +405,63 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         targetInfo.invalidate();
     }
 
+    private void importConfig() {
+        Intent fileIntent = new Intent(Intent.ACTION_GET_CONTENT);
+        fileIntent.setType("file/*"); // intent type to filter application based on your requirement
+        startActivityForResult(fileIntent, FILE_SELECT_CODE);
+    }
 
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+            case FILE_SELECT_CODE:
+                if (resultCode == RESULT_OK) {
+                    // Get the Uri of the selected file
+                    try {
+                        Uri uri = data.getData();
+
+                        Log.d("BeagleSight", "File Uri: " + uri.toString());
+                        // Get the path
+
+                        File fname = new File(getRealPathFromURI(uri));
+
+                        FileInputStream fis = new FileInputStream(fname);
+                        final List<Target> targets = new ArrayList<>();
+                        final List<LocationDescription> shootPositions = new ArrayList<>();
+                        XmlParser.parseTargetXML(fis, targets, shootPositions);
+                        AsyncTask.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                for (Target target : targets) {
+                                    tm.targetDao().insertAll(target);
+                                }
+                                for (LocationDescription locationDescription : shootPositions) {
+                                    tm.locationDescriptionDao().insertAll(locationDescription);
+                                }
+                            }
+                        });
+                    } catch (SAXException | ParserConfigurationException | IOException | NullPointerException e) {
+                        Toast.makeText(this, "Failed to load BowConfig: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                }
+                recreate();
+                break;
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private String getRealPathFromURI(Uri contentURI) {
+        String result;
+        Cursor cursor = getContentResolver().query(contentURI, null, null, null, null);
+        if (cursor == null) { // Source is Dropbox or other similar local file path
+            result = contentURI.getPath();
+        } else {
+            cursor.moveToFirst();
+            int idx = cursor.getColumnIndex(MediaStore.Images.ImageColumns.DATA);
+            result = cursor.getString(idx);
+            cursor.close();
+        }
+        return result;
+    }
 }
