@@ -50,10 +50,8 @@ public class SightList extends AppCompatActivity implements BowListRecyclerViewA
     private FloatingActionButton fab;
 
     private static final int FILE_SELECT_CODE = 0;
-    private static final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 1;
     private static final int ADD_BOW = 2;
     private BowListRecyclerViewAdapter adapter;
-    private AppBarLayout appBarLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,8 +59,7 @@ public class SightList extends AppCompatActivity implements BowListRecyclerViewA
         setContentView(R.layout.activity_sight_list);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        appBarLayout = findViewById(R.id.app_bar);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         addIntent = new Intent(this, AddSight.class);
 
