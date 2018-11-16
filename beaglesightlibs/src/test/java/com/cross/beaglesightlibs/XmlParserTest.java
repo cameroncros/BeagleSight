@@ -22,6 +22,9 @@ import static org.junit.Assert.assertTrue;
 public class XmlParserTest {
     @Test
     public void ParseTarget() throws ParserConfigurationException, SAXException, IOException {
+
+        List<Target> targets = new ArrayList<>();
+
         Target target = new Target();
         target.setName(randomString());
         target.setBuiltin(false);
@@ -34,28 +37,30 @@ public class XmlParserTest {
         {
             positionList.add(randomLocation(target.getId()));
         }
+        target.setShootLocations(positionList);
+
+        Target target2 = new Target();
+        target2.setName(randomString());
+        target2.setBuiltin(true);
+        target2.setId(randomString());
+
+        target2.setTargetLocation(randomLocation(target.getId()));
+
+        targets.add(target);
+        targets.add(target2);
+
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        XmlParser.serialiseTarget(outputStream, target, positionList);
+        XmlParser.serialiseTargets(outputStream, targets);
 
         String string = outputStream.toString();
         ByteArrayInputStream inputStream = new ByteArrayInputStream(string.getBytes());
 
-        List<LocationDescription> resultPositionList = new ArrayList<>();
-        List<Target> targetList = new ArrayList<>();
-        XmlParser.parseTargetXML(inputStream, targetList, resultPositionList);
+        List<Target> targetList = XmlParser.parseTargetsXML(inputStream);
 
-        assertEquals(1, targetList.size());
-        assertEquals(target, targetList.get(0));
-
-        assertEquals(positionList.size(), resultPositionList.size());
-
-        for (LocationDescription expectedLocation: positionList)
-        {
-            assertTrue(resultPositionList.contains(expectedLocation));
-        }
-
-
+        assertEquals(targets.size(), targetList.size());
+        assertTrue(targetList.contains(target));
+        assertTrue(targetList.contains(target2));
     }
 
     private String randomString() {

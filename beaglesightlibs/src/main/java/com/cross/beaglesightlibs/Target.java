@@ -4,6 +4,7 @@ import android.os.Build;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -15,6 +16,7 @@ import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Embedded;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.Insert;
 import androidx.room.PrimaryKey;
 import androidx.room.Query;
@@ -32,9 +34,13 @@ public class Target {
     @Embedded
     private LocationDescription targetLocation;
 
+    @Ignore
+    private List<LocationDescription> shootLocations;
+
     public Target()
     {
         id=UUID.randomUUID().toString();
+        shootLocations = new ArrayList<>();
     }
 
     public String getId() {
@@ -69,6 +75,14 @@ public class Target {
         this.builtin = builtin;
     }
 
+    public List<LocationDescription> getShootLocations() {
+        return shootLocations;
+    }
+
+    public void setShootLocations(List<LocationDescription> shootLocations) {
+        this.shootLocations = shootLocations;
+    }
+
     @Dao
     public interface TargetDao {
         @Transaction
@@ -88,17 +102,32 @@ public class Target {
         if (this == o) return true;
         if (!(o instanceof Target)) return false;
         Target target = (Target) o;
-        return builtin == target.builtin &&
-                Objects.equals(id, target.id) &&
-                Objects.equals(name, target.name) &&
-                Objects.equals(targetLocation, target.targetLocation);
+        if (builtin != target.builtin ||
+                !Objects.equals(id, target.id) ||
+                !Objects.equals(name, target.name) ||
+                !Objects.equals(targetLocation, target.targetLocation))
+        {
+            return false;
+        }
+        if (shootLocations.size() != target.getShootLocations().size())
+        {
+            return false;
+        }
+        for (LocationDescription loc : shootLocations)
+        {
+            if (!target.getShootLocations().contains(loc))
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
     public int hashCode() {
 
-        return Objects.hash(id, name, builtin, targetLocation);
+        return Objects.hash(id, name, builtin, targetLocation, shootLocations);
     }
 
 }

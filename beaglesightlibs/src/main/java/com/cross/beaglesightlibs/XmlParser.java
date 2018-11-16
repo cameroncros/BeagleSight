@@ -13,6 +13,7 @@ import org.xmlpull.v1.XmlSerializer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -33,28 +34,35 @@ public class XmlParser {
         private static final String BUILTIN = "builtin";
         private static final String LOCATION = "location";
         private static final String SHOOT_POSITION = "shoot_position";
+        private static final String TARGETS = "targets";
         private static final String TARGET = "target";
     }
 
-    public static void parseTargetXML(InputStream stream,
-                                      List<Target> targets,
-                                      List<LocationDescription> locations)
+    public static List<Target> parseTargetsXML(InputStream stream)
             throws IOException, ParserConfigurationException, SAXException {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder db = factory.newDocumentBuilder();
         InputSource inputSource = new InputSource(stream);
         Document document = db.parse(inputSource);
 
-        NodeList nodelist = document.getElementsByTagName(XML_TAGS.TARGET);
+        List<Target> targets = new ArrayList<>();
 
-        for (int i = 0; i < nodelist.getLength(); i++) {
-            Target target = parseTarget(nodelist.item(i), locations);
-            targets.add(target);
+        NodeList nodelist = document.getElementsByTagName(XML_TAGS.TARGETS);
+        NodeList targetNodes = nodelist.item(0).getChildNodes();
+
+        for (int i = 0; i < targetNodes.getLength(); i++) {
+            Node targetNode = targetNodes.item(i);
+            if (targetNode.getNodeName() == XML_TAGS.TARGET) {
+                Target target = parseTarget(targetNode);
+                targets.add(target);
+            }
         }
+        return targets;
     }
 
-    private static Target parseTarget(Node node, List<LocationDescription> locations) {
+    private static Target parseTarget(Node node) {
         Target target = new Target();
+        List<LocationDescription> locations = new ArrayList<>();
 
         NodeList children = node.getChildNodes();
         for (int j = 0; j < children.getLength(); j++) {
@@ -78,6 +86,7 @@ public class XmlParser {
                     break;
             }
         }
+        target.setShootLocations(locations);
         return target;
     }
 
@@ -116,12 +125,22 @@ public class XmlParser {
         return locDesc;
     }
 
-    public static void serialiseTarget(OutputStream stream, Target target, List<LocationDescription> shootPositions) throws IOException {
+    public static void serialiseTargets(OutputStream stream, List<Target> targets) throws IOException {
         XmlSerializer serializer = Xml.newSerializer();
         serializer.setOutput(stream, "UTF-8");
         serializer.startDocument(null, Boolean.TRUE);
         serializer.setFeature("http://xmlpull.org/v1/doc/features.html#indent-output", true);
 
+        serializer.startTag(null, XML_TAGS.TARGETS);
+        for (Target target : targets) {
+            serialiseTarget(serializer, target);
+        }
+        serializer.endTag(null, XML_TAGS.TARGETS);
+        serializer.endDocument();
+        serializer.flush();
+    }
+
+    private static void serialiseTarget(XmlSerializer serializer, Target target) throws IOException {
         serializer.startTag(null, XML_TAGS.TARGET);
         serializer.startTag(null, XML_TAGS.ID);
         serializer.text(target.getId());
@@ -130,7 +149,7 @@ public class XmlParser {
         serializer.text(target.getName());
         serializer.endTag(null, XML_TAGS.NAME);
         serializer.startTag(null, XML_TAGS.BUILTIN);
-        serializer.text(target.getName());
+        serializer.text(Boolean.toString(target.isBuiltin()));
         serializer.endTag(null, XML_TAGS.BUILTIN);
 
 
@@ -138,15 +157,13 @@ public class XmlParser {
         serialiseLocation(serializer, target.getTargetLocation());
         serializer.endTag(null, XML_TAGS.LOCATION);
 
-        for (LocationDescription locationDescription : shootPositions) {
+        for (LocationDescription locationDescription : target.getShootLocations()) {
             serializer.startTag(null, XML_TAGS.SHOOT_POSITION);
             serialiseLocation(serializer, locationDescription);
             serializer.endTag(null, XML_TAGS.SHOOT_POSITION);
         }
 
         serializer.endTag(null, XML_TAGS.TARGET);
-        serializer.endDocument();
-        serializer.flush();
     }
 
     private static void serialiseLocation(XmlSerializer serializer, LocationDescription locationDescription) throws IOException {

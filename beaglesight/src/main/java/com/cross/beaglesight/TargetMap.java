@@ -45,6 +45,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -157,22 +158,23 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
                         shareIntent.setType("text/xml");
                         ArrayList<Uri> uris = new ArrayList<>();
 
-                        for (Target target : tm.targetDao().getAll()) {
+                        List<Target> targets = tm.targetDao().getAll();
+                        for (Target target : targets) {
                             List<LocationDescription> shootPositions = tm.locationDescriptionDao().getLocationsForTarget(target.getId());
+                            target.setShootLocations(shootPositions);
+                        }
+                        try {
+                            String filename = new Date().toString();
 
-                            try {
-                                String filename = target.getId();
+                            File outputFile = File.createTempFile("Target_" + filename, ".xml", outputDir);
+                            FileOutputStream fos = new FileOutputStream(outputFile);
+                            XmlParser.serialiseTargets(fos, targets);
 
-                                File outputFile = File.createTempFile("Target_" + filename, ".xml", outputDir);
-                                FileOutputStream fos = new FileOutputStream(outputFile);
-                                XmlParser.serialiseTarget(fos, target, shootPositions);
+                            Uri uri = FileProvider.getUriForFile(getApplicationContext(), BuildConfig.APPLICATION_ID, outputFile);
+                            uris.add(uri);
 
-                                Uri uri = FileProvider.getUriForFile(getApplicationContext(), BuildConfig.APPLICATION_ID, outputFile);
-                                uris.add(uri);
-
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         }
                         shareIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris);
                         startActivity(Intent.createChooser(shareIntent, "Export Configs"));
@@ -427,17 +429,15 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
                         File fname = new File(getRealPathFromURI(uri));
 
                         FileInputStream fis = new FileInputStream(fname);
-                        final List<Target> targets = new ArrayList<>();
-                        final List<LocationDescription> shootPositions = new ArrayList<>();
-                        XmlParser.parseTargetXML(fis, targets, shootPositions);
+                        final List<Target> targets = XmlParser.parseTargetsXML(fis);
                         AsyncTask.execute(new Runnable() {
                             @Override
                             public void run() {
                                 for (Target target : targets) {
                                     tm.targetDao().insertAll(target);
-                                }
-                                for (LocationDescription locationDescription : shootPositions) {
-                                    tm.locationDescriptionDao().insertAll(locationDescription);
+                                    for (LocationDescription locationDescription : target.getShootLocations()) {
+                                        tm.locationDescriptionDao().insertAll(locationDescription);
+                                    }
                                 }
                             }
                         });
