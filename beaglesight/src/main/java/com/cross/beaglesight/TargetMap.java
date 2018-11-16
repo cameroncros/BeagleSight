@@ -2,7 +2,9 @@ package com.cross.beaglesight;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -12,6 +14,8 @@ import android.location.LocationManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.ResultReceiver;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Menu;
@@ -79,6 +83,8 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
     private TextView targetDistance;
     private LocationDescription selectedShootLocation = null;
     private Target selectedTarget = null;
+    private ProgressDialog mProgressDialog;
+    private static String downloadURL = "https://raw.githubusercontent.com/cameroncros/BeagleSight/master/default_configs/targets.xml";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -120,6 +126,11 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
                 focusMap();
             }
         });
+
+        mProgressDialog = new ProgressDialog(TargetMap.this);
+        mProgressDialog.setMessage("A message");
+        mProgressDialog.setIndeterminate(true);
+        mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
     }
 
     @Override
@@ -182,7 +193,17 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
                 });
                 return true;
             case R.id.action_update:
-                //startActivity(new Intent(this, SyncTargets.class));
+                try {
+                    File defaultsFile = File.createTempFile("Targets", "xml");
+                    mProgressDialog.show();
+                    Intent intent = new Intent(this, DownloadService.class);
+                    intent.putExtra(DownloadService.URL, downloadURL);
+                    intent.putExtra(DownloadService.PATH, defaultsFile.getAbsolutePath());
+                    intent.putExtra(DownloadService.RECEIVER, new DownloadReceiver(new Handler()));
+                    startService(intent);
+                } catch (IOException ignored) {
+                    Toast.makeText(this, "Can't download, failed to create temp file", Toast.LENGTH_LONG).show();
+                }
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -463,5 +484,37 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
             cursor.close();
         }
         return result;
+    }
+
+    private class DownloadReceiver extends ResultReceiver {
+        DownloadReceiver(Handler handler) {
+            super(handler);
+        }
+
+        @Override
+        protected void onReceiveResult(int resultCode, Bundle resultData) {
+            super.onReceiveResult(resultCode, resultData);
+            if (resultCode == DownloadService.UPDATE_PROGRESS) {
+                int progress = resultData.getInt(DownloadService.PROGRESS);
+                String filePath = resultData.getString(DownloadService.PATH);
+                File file = new File(filePath);
+                mProgressDialog.setProgress(progress);
+                if (progress == 100) {
+
+                    boolean success = resultData.getBoolean(DownloadService.RESULT);
+                    mProgressDialog.dismiss();
+
+                    if (success) {
+                        Intent data = new Intent();
+                        data.setData(Uri.fromFile(file));
+                        onActivityResult(FILE_SELECT_CODE, RESULT_OK, data);
+                    } else {
+                        Toast.makeText(getApplicationContext(),
+                                "Failed to download file",
+                                Toast.LENGTH_LONG).show();
+                    }
+                }
+            }
+        }
     }
 }
