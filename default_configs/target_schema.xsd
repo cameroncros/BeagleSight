@@ -11,8 +11,8 @@
             <xs:element name="id" type="GUID" />
             <xs:element name="target_id" type="GUID" />
             <xs:element name="description" minOccurs="0" type="xs:string" />
-            <xs:element name="longitude" type="xs:float" />
             <xs:element name="latitude" type="xs:float" />
+            <xs:element name="longitude" type="xs:float" />
             <xs:element name="altitude" type="xs:float" />
             <xs:element name="lat_lng_accuracy" minOccurs="0" type="xs:float" />
             <xs:element name="altitude_accuracy" minOccurs="0" type="xs:float" />
