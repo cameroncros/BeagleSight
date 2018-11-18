@@ -1,8 +1,6 @@
 package com.cross.beaglesightlibs;
 
 import android.os.Build;
-import android.os.Parcel;
-import android.os.Parcelable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +9,6 @@ import java.util.UUID;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
-import androidx.room.ColumnInfo;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Embedded;
@@ -21,7 +18,8 @@ import androidx.room.Insert;
 import androidx.room.PrimaryKey;
 import androidx.room.Query;
 import androidx.room.Transaction;
-import androidx.room.Update;
+
+import static androidx.room.OnConflictStrategy.REPLACE;
 
 @Entity
 public class Target {
@@ -89,7 +87,7 @@ public class Target {
         @Query("SELECT * FROM target")
         List<Target> getAll();
 
-        @Update
+        @Insert(onConflict = REPLACE)
         void insertAll(Target target);
 
         @Delete

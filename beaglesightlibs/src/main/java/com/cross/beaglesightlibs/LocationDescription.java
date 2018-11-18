@@ -20,11 +20,12 @@ import androidx.room.Delete;
 import androidx.room.Entity;
 import androidx.room.ForeignKey;
 import androidx.room.Index;
+import androidx.room.Insert;
 import androidx.room.PrimaryKey;
 import androidx.room.Query;
-import androidx.room.Update;
 
 import static androidx.room.ForeignKey.CASCADE;
+import static androidx.room.OnConflictStrategy.REPLACE;
 import static java.lang.Math.atan;
 
 @Entity(foreignKeys = @ForeignKey(entity = Target.class,
@@ -155,12 +156,6 @@ public class LocationDescription implements Parcelable {
         return new LatLng(latitude, longitude);
     }
 
-    public void setLatLng(LatLng latlng) {
-        this.latitude = latlng.latitude;
-        this.longitude = latlng.longitude;
-
-    }
-
     public float getLatlng_accuracy() {
         return latlng_accuracy;
     }
@@ -254,10 +249,10 @@ public class LocationDescription implements Parcelable {
         @Query("SELECT * FROM locationdescription WHERE targetId IN (:targetId)")
         List<LocationDescription> getLocationsForTarget(String targetId);
 
-        @Update
+        @Insert(onConflict = REPLACE)
         void insertAll(LocationDescription... locationDescriptions);
 
         @Delete
-        void delete(LocationDescription user);
+        void delete(LocationDescription locationDescription);
     }
 }
