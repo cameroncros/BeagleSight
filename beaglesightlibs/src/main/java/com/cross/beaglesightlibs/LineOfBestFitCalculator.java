@@ -87,8 +87,8 @@ public class LineOfBestFitCalculator extends PositionCalculator {
 	private float sum(List<PositionPair> positionArray, int xpower, int ypower) {
 		float val = 0;
 		for (PositionPair pair : positionArray) {
-			float x = pair.getDistanceFloat();
-			float y = pair.getPositionFloat();
+			float x = pair.getDistance();
+			float y = pair.getPosition();
 			val += Math.pow(x, xpower)*Math.pow(y, ypower);
 			
 		}

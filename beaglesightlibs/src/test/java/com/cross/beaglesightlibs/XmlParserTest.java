@@ -33,8 +33,7 @@ public class XmlParserTest {
         target.setTargetLocation(randomLocation(target.getId()));
 
         List<LocationDescription> positionList = new ArrayList<>();
-        for (int i = 0; i < 5; i++)
-        {
+        for (int i = 0; i < 5; i++) {
             positionList.add(randomLocation(target.getId()));
         }
         target.setShootLocations(positionList);
@@ -63,6 +62,34 @@ public class XmlParserTest {
         assertTrue(targetList.contains(target2));
     }
 
+    @Test
+    public void ParseSingleBowConfig() throws IOException, ParserConfigurationException, SAXException {
+        BowConfig bowConfig = new BowConfig();
+        String bowID = randomString();
+        bowConfig.setId(bowID);
+        bowConfig.setDescription(randomString());
+        bowConfig.setName(randomString());
+        List<PositionPair> pairs = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            PositionPair pair = new PositionPair();
+            pair.setDistance(randomFloat());
+            pair.setPosition(randomFloat());
+            pair.setBowId(bowID);
+            pair.setId(randomString());
+        }
+        bowConfig.setPositionArray(pairs);
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        XmlParser.serialiseSingleBowConfig(outputStream, bowConfig);
+
+        String string = outputStream.toString();
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(string.getBytes());
+
+        BowConfig bowConfig1 = XmlParser.parseSingleBowConfigXML(inputStream);
+
+        assertEquals(bowConfig, bowConfig1);
+    }
+
     private String randomString() {
         return UUID.randomUUID().toString();
     }
@@ -81,7 +108,7 @@ public class XmlParserTest {
     }
 
     private float randomFloat() {
-        return (float)Math.random();
+        return (float) Math.random();
     }
 
     private double randomDouble() {

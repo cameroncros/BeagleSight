@@ -30,6 +30,7 @@ public class WearSync {
         if (isPhone) {
             DataMap dataMap = dataMapRequest.getDataMap();
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            XmlParser.serialiseBowConfig(baos, bowConfig);
             bowConfig.save(baos);
             dataMap.putByteArray(bowConfig.getId(), baos.toByteArray());
             PutDataRequest dataRequest = dataMapRequest.asPutDataRequest();

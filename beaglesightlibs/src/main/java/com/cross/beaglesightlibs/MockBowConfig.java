@@ -3,7 +3,7 @@ package com.cross.beaglesightlibs;
 public class MockBowConfig extends BowConfig {
     public MockBowConfig()
     {
-        super("MockBowConfig", "Mock Description");
+        super();
     }
 
     @Override

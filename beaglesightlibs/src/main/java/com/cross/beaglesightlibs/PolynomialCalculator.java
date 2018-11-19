@@ -48,8 +48,8 @@ public class PolynomialCalculator extends PositionCalculator
 
 			int i = 0;
 			for (PositionPair pair : positions) {
-				double distance = pair.getDistanceFloat();
-				double position = pair.getPositionFloat();
+				double distance = pair.getDistance();
+				double position = pair.getPosition();
 				rhs[i]=position;
 				for (int j = 0; j < size; j++) {
 					values[i][j]=Math.pow(distance, size-j-1);
