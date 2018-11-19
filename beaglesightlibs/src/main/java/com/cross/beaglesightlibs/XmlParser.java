@@ -1,6 +1,5 @@
 package com.cross.beaglesightlibs;
 
-import android.util.Log;
 import android.util.Xml;
 
 import org.w3c.dom.Document;
@@ -52,7 +51,7 @@ public class XmlParser {
 
         for (int i = 0; i < targetNodes.getLength(); i++) {
             Node targetNode = targetNodes.item(i);
-            if (targetNode.getNodeName() == XML_TAGS.TARGET) {
+            if (targetNode.getNodeName().equals(XML_TAGS.TARGET)) {
                 Target target = parseTarget(targetNode);
                 targets.add(target);
             }

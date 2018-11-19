@@ -41,4 +41,5 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="action_update">Update Public Targets</string>
     <string name="action_export">Export</string>
+    <string name="download_message">Downloading public targets…</string>
 </resources>

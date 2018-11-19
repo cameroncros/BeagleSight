@@ -4,7 +4,6 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -128,7 +127,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         });
 
         mProgressDialog = new ProgressDialog(TargetMap.this);
-        mProgressDialog.setMessage("A message");
+        mProgressDialog.setMessage(getString(R.string.download_message));
         mProgressDialog.setIndeterminate(true);
         mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
     }
@@ -145,8 +144,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        switch (id)
-        {
+        switch (id) {
             case R.id.action_add:
                 startActivity(new Intent(this, EditTarget.class));
                 return true;
@@ -194,7 +192,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
                 return true;
             case R.id.action_update:
                 try {
-                    File defaultsFile = File.createTempFile("Targets", "xml");
+                    File defaultsFile = File.createTempFile("Targets", ".xml");
                     mProgressDialog.show();
                     Intent intent = new Intent(this, DownloadService.class);
                     intent.putExtra(DownloadService.URL, downloadURL);
@@ -386,13 +384,10 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         selectedShootLocation = null;
         selectedTarget = null;
 
-        if (markerOptionsLocationDescriptionMap.containsKey(marker))
-        {
+        if (markerOptionsLocationDescriptionMap.containsKey(marker)) {
             selectedShootLocation = markerOptionsLocationDescriptionMap.get(marker);
             selectedTarget = markerOptionsTargetMap.get(marker);
-        }
-        else if (markerOptionsTargetMap.containsKey(marker))
-        {
+        } else if (markerOptionsTargetMap.containsKey(marker)) {
             selectedTarget = markerOptionsTargetMap.get(marker);
         }
 
@@ -400,28 +395,22 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         return false;
     }
 
-    public void updateTargetInfo()
-    {
-        if (selectedShootLocation != null && selectedTarget != null)
-        {
+    public void updateTargetInfo() {
+        if (selectedShootLocation != null && selectedTarget != null) {
             targetInfo.setVisibility(View.VISIBLE);
             targetDescription.setText(selectedShootLocation.getDescription());
             targetDistance.setText(getStats(selectedShootLocation, selectedTarget.getTargetLocation()));
-        }
-        else if (selectedTarget != null)
-        {
+        } else if (selectedTarget != null) {
             LocationDescription targetLocation = selectedTarget.getTargetLocation();
             targetInfo.setVisibility(View.VISIBLE);
             targetDescription.setText(targetLocation.getDescription());
             if (currentLocation != null) {
                 LocationDescription currentShootLocation = new LocationDescription(currentLocation);
                 targetDistance.setText(getStats(currentShootLocation, targetLocation));
-            }else
-            {
+            } else {
                 targetDistance.setText(R.string.waiting_for_location);
             }
-        }
-        else {
+        } else {
 
             targetInfo.setVisibility(View.GONE);
         }
@@ -441,35 +430,37 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
             case FILE_SELECT_CODE:
                 if (resultCode == RESULT_OK) {
                     // Get the Uri of the selected file
-                    try {
-                        Uri uri = data.getData();
+                    Uri uri = data.getData();
+                    Log.d("BeagleSight", "File Uri: " + uri.toString());
 
-                        Log.d("BeagleSight", "File Uri: " + uri.toString());
-                        // Get the path
-
-                        File fname = new File(getRealPathFromURI(uri));
-
-                        FileInputStream fis = new FileInputStream(fname);
-                        final List<Target> targets = XmlParser.parseTargetsXML(fis);
-                        AsyncTask.execute(new Runnable() {
-                            @Override
-                            public void run() {
-                                for (Target target : targets) {
-                                    tm.targetDao().insertAll(target);
-                                    for (LocationDescription locationDescription : target.getShootLocations()) {
-                                        tm.locationDescriptionDao().insertAll(locationDescription);
-                                    }
-                                }
-                            }
-                        });
-                    } catch (SAXException | ParserConfigurationException | IOException | NullPointerException e) {
-                        Toast.makeText(this, "Failed to load BowConfig: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                    }
+                    // Get the path
+                    File fname = new File(getRealPathFromURI(uri));
+                    importXMLFile(fname);
                 }
                 recreate();
                 break;
         }
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private void importXMLFile(File fname) {
+        try {
+            FileInputStream fis = new FileInputStream(fname);
+            final List<Target> targets = XmlParser.parseTargetsXML(fis);
+            AsyncTask.execute(new Runnable() {
+                @Override
+                public void run() {
+                    for (Target target : targets) {
+                        tm.targetDao().insertAll(target);
+                        for (LocationDescription locationDescription : target.getShootLocations()) {
+                            tm.locationDescriptionDao().insertAll(locationDescription);
+                        }
+                    }
+                }
+            });
+        } catch (IOException | ParserConfigurationException | SAXException e) {
+            Toast.makeText(this, "Failed to import file", Toast.LENGTH_LONG).show();
+        }
     }
 
     private String getRealPathFromURI(Uri contentURI) {
@@ -505,9 +496,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
                     mProgressDialog.dismiss();
 
                     if (success) {
-                        Intent data = new Intent();
-                        data.setData(Uri.fromFile(file));
-                        onActivityResult(FILE_SELECT_CODE, RESULT_OK, data);
+                        importXMLFile(file);
                     } else {
                         Toast.makeText(getApplicationContext(),
                                 "Failed to download file",

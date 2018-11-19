@@ -5,6 +5,8 @@ import org.xml.sax.SAXException;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,10 +18,20 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(RobolectricTestRunner.class)
 public class XmlParserTest {
+    @Test
+    public void ParsePublishedTargets() throws ParserConfigurationException, SAXException, IOException {
+        File targetFile = new File("../default_configs/targets.xml");
+        FileInputStream fis = new FileInputStream(targetFile);
+        List<Target> targets = XmlParser.parseTargetsXML(fis);
+        assertNotEquals(0, targets.size());
+
+    }
+
     @Test
     public void ParseTarget() throws ParserConfigurationException, SAXException, IOException {
 
