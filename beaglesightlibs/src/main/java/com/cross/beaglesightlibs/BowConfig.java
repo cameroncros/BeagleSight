@@ -92,5 +92,8 @@ public class BowConfig {
 
         @Delete
         void delete(BowConfig bowConfig);
+
+        @Query("SELECT * FROM bowconfig WHERE id IS (:id)")
+        BowConfig get(String id);
     }
 }

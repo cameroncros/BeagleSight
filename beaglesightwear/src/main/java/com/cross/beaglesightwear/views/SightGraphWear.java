@@ -177,11 +177,11 @@ public class SightGraphWear extends View {
         maxPos = selectedPosition + zoomDist;
 
         positionPairMap = new HashMap<>();
-        List<PositionPair> positions = bowConfig.getPositions();
+        List<PositionPair> positions = bowConfig.getPositionArray();
 
         for (PositionPair pair : positions) {
-            float position = pair.getPositionFloat();
-            float distance = pair.getDistanceFloat();
+            float position = pair.getPosition();
+            float distance = pair.getDistance();
 
             float positionPixel = positionToPixel(position);
             float distancePixel = distanceToPixel(distance);
@@ -245,8 +245,8 @@ public class SightGraphWear extends View {
         // Draw the dots.
         Set<PositionPair> positions = positionPairMap.keySet();
         for (PositionPair pair : positions) {
-            float positionPixel = pair.getPositionFloat();
-            float distancePixel = pair.getDistanceFloat();
+            float positionPixel = pair.getPosition();
+            float distancePixel = pair.getDistance();
 
             canvas.drawCircle(distancePixel, positionPixel, lineWidth * 2, pointPaint);
         }

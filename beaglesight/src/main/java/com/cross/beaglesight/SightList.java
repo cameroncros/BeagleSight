@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
@@ -20,6 +21,7 @@ import android.widget.Toast;
 import com.cross.beaglesight.fragments.BowListRecyclerViewAdapter;
 import com.cross.beaglesightlibs.BowConfig;
 import com.cross.beaglesightlibs.BowManager;
+import com.cross.beaglesightlibs.XmlParser;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -52,6 +54,7 @@ public class SightList extends AppCompatActivity implements BowListRecyclerViewA
     private static final int FILE_SELECT_CODE = 0;
     private static final int ADD_BOW = 2;
     private BowListRecyclerViewAdapter adapter;
+    private BowManager bm;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +63,7 @@ public class SightList extends AppCompatActivity implements BowListRecyclerViewA
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        bm = BowManager.getInstance(this);
 
         addIntent = new Intent(this, AddSight.class);
 
@@ -81,15 +85,7 @@ public class SightList extends AppCompatActivity implements BowListRecyclerViewA
         }
 
         // Load bows
-        BowManager bm = BowManager.getInstance(getApplicationContext());
-        bm.loadBows(new BowManager.LoadCallback() {
-            @Override
-            public void onResult(List<BowConfig> results) {
-                configList.clear();
-                configList.addAll(results);
-                adapter.notifyDataSetChanged();
-            }
-        });
+        updateBows();
     }
 
     @Override
@@ -184,16 +180,19 @@ public class SightList extends AppCompatActivity implements BowListRecyclerViewA
 
         @Override
         public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-            BowManager bm = BowManager.getInstance(getBaseContext());
+            final BowManager bm = BowManager.getInstance(getBaseContext());
             switch (item.getItemId()) {
                 case R.id.action_delete:
-                    for (BowConfig config : selectedBowConfigs)
-                    {
-                        bm.deleteBowConfig(config);
-                    }
-                    configList.clear();
-                    configList.addAll(BowManager.getInstance(getApplicationContext()).getBowList());
-                    adapter.notifyDataSetChanged();
+                    AsyncTask.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            for (BowConfig config : selectedBowConfigs)
+                            {
+                                bm.bowConfigDao().delete(config);
+                            }
+                            updateBows();
+                        }
+                    });
                     break;
                 case R.id.action_export:
                     File outputDir = getCacheDir();
@@ -210,7 +209,7 @@ public class SightList extends AppCompatActivity implements BowListRecyclerViewA
                             }
                             File outputFile = File.createTempFile("BowConfig_" + filename, ".xml", outputDir);
                             FileOutputStream fos = new FileOutputStream(outputFile);
-                            config.save(fos);
+                            XmlParser.serialiseSingleBowConfig(fos, config);
                             Uri uri = FileProvider.getUriForFile(getApplicationContext(), BuildConfig.APPLICATION_ID, outputFile);
                             uris.add(uri);
 
@@ -239,28 +238,50 @@ public class SightList extends AppCompatActivity implements BowListRecyclerViewA
         }
     };
 
+    private void updateBows() {
+        AsyncTask.execute(new Runnable() {
+            @Override
+            public void run() {
+                configList.clear();
+                configList.addAll(bm.bowConfigDao().getAll());
+
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        adapter.notifyDataSetChanged();
+                    }
+                });
+            }
+        });
+    }
+
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    protected void onActivityResult(int requestCode, int resultCode, final Intent data) {
         switch (requestCode) {
             case FILE_SELECT_CODE:
                 if (resultCode == RESULT_OK) {
                     // Get the Uri of the selected file
-                    try {
-                        Uri uri = data.getData();
+                    AsyncTask.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                Uri uri = data.getData();
 
-                        Log.d("BeagleSight", "File Uri: " + uri.toString());
-                        // Get the path
+                                Log.d("BeagleSight", "File Uri: " + uri.toString());
+                                // Get the path
 
-                        File fname = new File(getRealPathFromURI(uri));
+                                File fname = new File(getRealPathFromURI(uri));
 
-                        FileInputStream fis = new FileInputStream(fname);
-                        BowConfig bowConfig = new BowConfig(fis);
-                        BowManager.getInstance(getApplicationContext()).addBowConfig(bowConfig);
-                    } catch (SAXException | ParserConfigurationException | IOException | NullPointerException e) {
-                        Toast.makeText(this, "Failed to load BowConfig: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                    }
+                                FileInputStream fis = new FileInputStream(fname);
+                                BowConfig bowConfig = XmlParser.parseSingleBowConfigXML(fis);
+                                bm.bowConfigDao().insertAll(bowConfig);
+                                updateBows();
+                            } catch (SAXException | ParserConfigurationException | IOException | NullPointerException ignored) {
+                            }
+                        }
+                    });
+
                 }
-                recreate();
                 break;
             case ADD_BOW:
                 if(resultCode == RESULT_OK) {

@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.wearable.activity.WearableActivity;
 import android.view.View;
@@ -64,15 +65,21 @@ public class ShowSight extends WearableActivity {
 
     void drawBowConfig()
     {
-        try {
-            BowConfig bowConfig = BowManager.getInstance(this).getBowConfig(bowId);
+        AsyncTask.execute(new Runnable() {
+            @Override
+            public void run() {
+                BowManager bm = BowManager.getInstance(ShowSight.this);
+                final BowConfig bowConfig = bm.bowConfigDao().get(bowId);
+                bowConfig.setPositionArray(bm.positionPairDao().getPositionForBow(bowId));
 
-            SightGraphWear sightGraphWear = findViewById(R.id.sightGraph);
-            sightGraphWear.setBowConfig(bowConfig);
-
-        } catch (InvalidBowConfigIdException e) {
-            Toast.makeText(this,"Invalid bow config", Toast.LENGTH_LONG).show();
-            finish();
-        }
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        SightGraphWear sightGraphWear = findViewById(R.id.sightGraph);
+                        sightGraphWear.setBowConfig(bowConfig);
+                    }
+                });
+            }
+        });
     }
 }

@@ -3,6 +3,7 @@ package com.cross.beaglesightlibs;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.widget.Toast;
 
 import com.google.android.gms.wearable.DataClient;
 import com.google.android.gms.wearable.DataMap;
@@ -11,6 +12,7 @@ import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 public class WearSync {
     public static final String BOWCONFIGS = "/bowconfigs";
@@ -30,11 +32,16 @@ public class WearSync {
         if (isPhone) {
             DataMap dataMap = dataMapRequest.getDataMap();
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            XmlParser.serialiseBowConfig(baos, bowConfig);
-            bowConfig.save(baos);
-            dataMap.putByteArray(bowConfig.getId(), baos.toByteArray());
-            PutDataRequest dataRequest = dataMapRequest.asPutDataRequest();
-            dataClient.putDataItem(dataRequest);
+            try {
+                XmlParser.serialiseSingleBowConfig(baos, bowConfig);
+                dataMap.putByteArray(bowConfig.getId(), baos.toByteArray());
+                PutDataRequest dataRequest = dataMapRequest.asPutDataRequest();
+                dataClient.putDataItem(dataRequest);
+            }
+            catch (IOException ignored)
+            {
+                //Toast.makeText(, "Failed to serialise bowConfig", Toast.LENGTH_LONG).show();
+            }
         }
     }
 

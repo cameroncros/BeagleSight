@@ -5,6 +5,8 @@ import android.util.Log;
 
 import com.cross.beaglesightlibs.BowConfig;
 import com.cross.beaglesightlibs.BowManager;
+import com.cross.beaglesightlibs.PositionPair;
+import com.cross.beaglesightlibs.XmlParser;
 import com.google.android.gms.wearable.DataEvent;
 import com.google.android.gms.wearable.DataEventBuffer;
 import com.google.android.gms.wearable.DataItem;
@@ -34,9 +36,13 @@ public class ListenerService extends WearableListenerService {
         for (DataEvent event : dataEvents) {
             if (event.getType() == DataEvent.TYPE_CHANGED) {
                 // Remove all bow configs
-                for (BowConfig bowConfig : bowManager.getBowList())
+                for (BowConfig bowConfig : bowManager.bowConfigDao().getAll())
                 {
-                    bowManager.deleteBowConfig(bowConfig);
+                    bowManager.bowConfigDao().delete(bowConfig);
+                }
+                for (PositionPair positionPair : bowManager.positionPairDao().getAll())
+                {
+                    bowManager.positionPairDao().delete(positionPair);
                 }
                 // Add back bow configs
                 DataItem item = event.getDataItem();
@@ -47,8 +53,12 @@ public class ListenerService extends WearableListenerService {
                         byte[] bytes = dataMap.getByteArray(key);
                         ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
                         try {
-                            BowConfig bc = new BowConfig(bais);
-                            bowManager.addBowConfig(bc);
+                            BowConfig bc = XmlParser.parseSingleBowConfigXML(bais);
+                            bowManager.bowConfigDao().insertAll(bc);
+                            for (PositionPair positionPair : bc.getPositionArray())
+                            {
+                                bowManager.positionPairDao().insertAll(positionPair);
+                            }
                         } catch (IOException | ParserConfigurationException | SAXException e) {
                             e.printStackTrace();
                         }

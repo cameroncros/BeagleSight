@@ -1,22 +1,23 @@
 package com.cross.beaglesight;
 
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Toast;
 
 import com.cross.beaglesightlibs.BowConfig;
 import com.cross.beaglesightlibs.BowManager;
 import com.cross.beaglesightlibs.PositionCalculator;
 import com.cross.beaglesightlibs.PositionPair;
-import com.cross.beaglesightlibs.exceptions.InvalidBowConfigIdException;
 import com.cross.beaglesightlibs.exceptions.InvalidNumberFormatException;
 
 import static com.cross.beaglesight.ShowSight.CONFIG_TAG;
@@ -34,12 +35,12 @@ public class AddDistance extends AppCompatActivity {
     private EditText pinSetting2 = null;
     private EditText offset2 = null;
 
-    private BowManager bowManager = null;
+    private BowManager bm = null;
     private BowConfig bowConfig = null;
+    private String bowid;
 
 
-    private void updateAddStatus()
-    {
+    private void updateAddStatus() {
         String distance = simpleDistance.getText().toString();
         String pinSetting = simplePin.getText().toString();
 
@@ -50,18 +51,14 @@ public class AddDistance extends AppCompatActivity {
             Double.parseDouble(pinSetting);
             add.setEnabled(true);
             add.invalidate();
-        }
-        catch (NumberFormatException nfe)
-        {
+        } catch (NumberFormatException nfe) {
             add.setEnabled(false);
             add.invalidate();
         }
     }
 
-    private void calculateResultPin()
-    {
-        if (!simpleDistance.getText().toString().equals(""))
-        {
+    private void calculateResultPin() {
+        if (!simpleDistance.getText().toString().equals("")) {
             return;
         }
         try {
@@ -74,21 +71,18 @@ public class AddDistance extends AppCompatActivity {
             //y(x) = (y1-y2)/(x1-x2) * x + c
             // y(0) = c
             // c = y1 - (y1-y2)/(x1-x2) * x1
-            float c = y1 - ((y1-y2)/(x1-x2) * x1);
+            float c = y1 - ((y1 - y2) / (x1 - x2) * x1);
             String cstring = PositionCalculator.getDisplayValue(c, 2);
 
-            if (simplePin.getText().toString().equals(""))
-            {
+            if (simplePin.getText().toString().equals("")) {
                 simplePin.setText(cstring);
             }
-        }
-        catch (NumberFormatException nfe) {
+        } catch (NumberFormatException nfe) {
             // Do nothing
         }
     }
 
-    private void updateEstimates()
-    {
+    private void updateEstimates() {
         String distance = simpleDistance.getText().toString();
         try {
             float dist = Float.parseFloat(distance);
@@ -105,7 +99,7 @@ public class AddDistance extends AppCompatActivity {
             }
             // Guess slightly offsetted pin setting.
             {
-                float positionGuess = bowConfig.getPositionCalculator().calcPosition(dist-1);
+                float positionGuess = bowConfig.getPositionCalculator().calcPosition(dist - 1);
                 if (positionGuess == Float.NaN) {
                     return;
                 }
@@ -115,9 +109,7 @@ public class AddDistance extends AppCompatActivity {
                 }
             }
 
-        }
-        catch (NumberFormatException nfe)
-        {
+        } catch (NumberFormatException nfe) {
             // Do nothing.
         }
     }
@@ -165,28 +157,26 @@ public class AddDistance extends AppCompatActivity {
         @SuppressWarnings("ResultOfMethodCallIgnored")
         @Override
         public void onClick(View v) {
-            String distance = simpleDistance.getText().toString();
-            String pinSetting = simplePin.getText().toString();
-
             try {
-                Double.parseDouble(distance);
-                Double.parseDouble(pinSetting);
-
-                try {
-                    bowConfig.addPosition(new PositionPair(distance, pinSetting));
-                }
-                catch (InvalidNumberFormatException e)
-                {
-                    // Ignore, should never happen
-                }
-                bowManager.addBowConfig(bowConfig);
-
-                Intent intent = new Intent();
-                setResult(RESULT_OK, intent);
-                finish();
-            }
-            catch (NumberFormatException nfe)
-            {
+                Float distance = Float.parseFloat(simpleDistance.getText().toString());
+                Float pinSetting = Float.parseFloat(simplePin.getText().toString());
+                final PositionPair pair = new PositionPair(distance, pinSetting);
+                pair.setBowId(bowid);
+                AsyncTask.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        bm.positionPairDao().insertAll(pair);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Intent intent = new Intent();
+                                setResult(RESULT_OK, intent);
+                                finish();
+                            }
+                        });
+                    }
+                });
+            } catch (NumberFormatException nfe) {
                 add.setEnabled(false);
             }
         }
@@ -203,16 +193,8 @@ public class AddDistance extends AppCompatActivity {
 
 
         Intent intent = getIntent();
-        String id = (String) intent.getSerializableExtra(CONFIG_TAG);
-        try {
-            bowManager = BowManager.getInstance(this);
-            bowConfig = bowManager.getBowConfig(id);
-        }
-        catch (InvalidBowConfigIdException e)
-        {
-            Toast.makeText(this, R.string.failed_find_bow_settings, Toast.LENGTH_LONG).show();
-            finish();
-        }
+        bowid = (String) intent.getSerializableExtra(CONFIG_TAG);
+        bm = BowManager.getInstance(this);
 
         add = findViewById(R.id.addDistance);
         add.setOnClickListener(addPinSetting);

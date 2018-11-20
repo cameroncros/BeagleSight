@@ -189,12 +189,12 @@ public class SightGraph extends View implements LongPressCustomView {
 
     private void precalcDotLocations() {
         positionPairMap = new HashMap<>();
-        List<PositionPair> positions = bowConfig.getPositions();
+        List<PositionPair> positions = bowConfig.getPositionArray();
 
         for (PositionPair pair : positions)
         {
-            float position = pair.getPositionFloat();
-            float distance = pair.getDistanceFloat();
+            float position = pair.getPosition();
+            float distance = pair.getDistance();
 
             float positionPixel = positionToPixel(position);
             float distancePixel = distanceToPixel(distance);
@@ -266,15 +266,15 @@ public class SightGraph extends View implements LongPressCustomView {
         Set<PositionPair> positions = positionPairMap.keySet();
         if (selectedPairPixel != null)
         {
-            float positionPixel = selectedPairPixel.getPositionFloat();
-            float distancePixel = selectedPairPixel.getDistanceFloat();
+            float positionPixel = selectedPairPixel.getPosition();
+            float distancePixel = selectedPairPixel.getDistance();
 
             canvas.drawCircle(distancePixel, positionPixel, lineWidth*4, pointSelectedPaint);
         }
         for (PositionPair pair : positions)
         {
-            float positionPixel = pair.getPositionFloat();
-            float distancePixel = pair.getDistanceFloat();
+            float positionPixel = pair.getPosition();
+            float distancePixel = pair.getDistance();
 
             canvas.drawCircle(distancePixel, positionPixel, lineWidth*2, pointPaint);
         }
@@ -315,8 +315,8 @@ public class SightGraph extends View implements LongPressCustomView {
         Set<PositionPair> pixelPairs = positionPairMap.keySet();
         float closestDist = Float.MAX_VALUE;
         for (PositionPair pair : pixelPairs) {
-            float xdist = pair.getDistanceFloat() - xPixel;
-            float ydist = pair.getPositionFloat() - yPixel;
+            float xdist = pair.getDistance() - xPixel;
+            float ydist = pair.getPosition() - yPixel;
             float dist = Math.abs(xdist) + Math.abs(ydist);
             if (dist < (2 * touchRadius) && dist < closestDist) {
                 selectedPairPixel = pair;

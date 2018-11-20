@@ -1,10 +1,14 @@
 package com.cross.beaglesight;
 
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
+
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.ActionMode;
@@ -21,6 +25,8 @@ import com.cross.beaglesightlibs.BowManager;
 import com.cross.beaglesightlibs.PositionCalculator;
 import com.cross.beaglesightlibs.PositionPair;
 import com.cross.beaglesightlibs.exceptions.InvalidBowConfigIdException;
+
+import java.util.List;
 
 public class ShowSight extends AppCompatActivity implements SightGraph.SightGraphCallback {
     static final String CONFIG_TAG = "config";
@@ -55,9 +61,7 @@ public class ShowSight extends AppCompatActivity implements SightGraph.SightGrap
                 String posStr = PositionCalculator.getDisplayValue(posVal, 2);
                 position.setText(posStr);
                 sightGraph.setSelectedDistance(dist);
-            }
-            catch (NumberFormatException nfe)
-            {
+            } catch (NumberFormatException nfe) {
                 // Do nothing.
             }
         }
@@ -65,63 +69,69 @@ public class ShowSight extends AppCompatActivity implements SightGraph.SightGrap
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        try {
-            super.onCreate(savedInstanceState);
-            setContentView(R.layout.activity_show_sight);
-            Toolbar toolbar = findViewById(R.id.toolbar);
-            setSupportActionBar(toolbar);
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_show_sight);
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
-            Intent intent = getIntent();
-            id = (String) intent.getSerializableExtra(CONFIG_TAG);
-            bowConfig = BowManager.getInstance(this).getBowConfig(id);
+        Intent intent = getIntent();
+        id = (String) intent.getSerializableExtra(CONFIG_TAG);
+        getBowConfig();
 
-            final Intent addDistance = new Intent(this, AddDistance.class);
-            addDistance.putExtra(CONFIG_TAG, bowConfig.getId());
+        final Intent addDistance = new Intent(this, AddDistance.class);
+        addDistance.putExtra(CONFIG_TAG, id);
 
-            FloatingActionButton fab = findViewById(R.id.fabShowSight);
-            fab.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    startActivityForResult(addDistance, ADD_DISTANCE);
+        FloatingActionButton fab = findViewById(R.id.fabShowSight);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startActivityForResult(addDistance, ADD_DISTANCE);
+            }
+        });
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
+        distance = findViewById(R.id.distanceText);
+        position = findViewById(R.id.positionText);
+        distance.addTextChangedListener(distanceListener);
+    }
+
+    private void getBowConfig() {
+        AsyncTask.execute(new Runnable() {
+            @Override
+            public void run() {
+                BowManager bm = BowManager.getInstance(getApplicationContext());
+                bowConfig = bm.bowConfigDao().get(id);
+                if (bowConfig != null) {
+                    List<PositionPair> pairs = bm.positionPairDao().getPositionForBow(id);
+                    bowConfig.setPositionArray(pairs);
                 }
-            });
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-            positionCalculator = bowConfig.getPositionCalculator();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (bowConfig == null)
+                        {
+                            Toast.makeText(ShowSight.this, "Failed to find Bow Config", Toast.LENGTH_LONG).show();
+                            finish();
+                        }
+                        positionCalculator = bowConfig.getPositionCalculator();
 
-            sightGraph = findViewById(R.id.sightGraph);
-            sightGraph.setBowConfig(bowConfig);
-            sightGraph.setUpdateDistanceCallback(this);
-            sightGraph.invalidate();
-            distance = findViewById(R.id.distanceText);
-            position = findViewById(R.id.positionText);
-            distance.addTextChangedListener(distanceListener);
-        }
-        catch (InvalidBowConfigIdException e)
-        {
-            Toast.makeText(this, R.string.failed_find_bow_settings, Toast.LENGTH_LONG).show();
-            finish();
-        }
+                        sightGraph = findViewById(R.id.sightGraph);
+                        sightGraph.setBowConfig(bowConfig);
+                        sightGraph.setUpdateDistanceCallback(ShowSight.this);
+                        sightGraph.invalidate();
+                    }
+                });
+            }
+        });
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch (requestCode) {
             case ADD_DISTANCE:
-                if (resultCode == RESULT_OK)
-                {
-                    try
-                    {
-                        bowConfig = BowManager.getInstance(this).getBowConfig(id);
-                        sightGraph.setBowConfig(bowConfig);
-                        sightGraph.setUpdateDistanceCallback(this);
-                        sightGraph.invalidate();
-                    }
-                    catch (InvalidBowConfigIdException e)
-                    {
-                        Toast.makeText(this, R.string.failed_find_bow_settings, Toast.LENGTH_LONG).show();
-                        finish();
-                    }
+                if (resultCode == RESULT_OK) {
+                    getBowConfig();
                 }
                 break;
         }
@@ -146,8 +156,7 @@ public class ShowSight extends AppCompatActivity implements SightGraph.SightGrap
     }
 
     @Override
-    public void startDelete()
-    {
+    public void startDelete() {
         actionMode = startActionMode(selectedActionMode);
     }
 
@@ -168,8 +177,12 @@ public class ShowSight extends AppCompatActivity implements SightGraph.SightGrap
         public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
             switch (item.getItemId()) {
                 case R.id.delete_position:
-                    bowConfig.deletePosition(selectedPair);
-                    BowManager.getInstance(getBaseContext()).addBowConfig(bowConfig);
+                    AsyncTask.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            BowManager.getInstance(getApplicationContext()).positionPairDao().delete(selectedPair);
+                        }
+                    });
                     mode.finish();
                     recreate();
                     break;

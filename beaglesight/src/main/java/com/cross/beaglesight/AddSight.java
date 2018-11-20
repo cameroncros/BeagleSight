@@ -1,6 +1,7 @@
 package com.cross.beaglesight;
 
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import androidx.core.app.NavUtils;
 import androidx.appcompat.app.AppCompatActivity;
@@ -14,6 +15,7 @@ import android.widget.EditText;
 
 import com.cross.beaglesightlibs.BowConfig;
 import com.cross.beaglesightlibs.BowManager;
+import com.cross.beaglesightlibs.PositionPair;
 
 import static com.cross.beaglesight.ShowSight.CONFIG_TAG;
 
@@ -36,18 +38,35 @@ public class AddSight extends AppCompatActivity implements View.OnClickListener 
     public void onClick(View v) {
         EditText nameEntry = findViewById(R.id.name);
         EditText descriptionEntry = findViewById(R.id.description);
-        BowManager bowManager = BowManager.getInstance(this);
+        final BowManager bowManager = BowManager.getInstance(this);
 
         String name = nameEntry.getText().toString();
         String description = descriptionEntry.getText().toString();
 
-        BowConfig bowConfig = new BowConfig(name, description);
-        bowManager.addBowConfig(bowConfig);
+        final BowConfig bowConfig = new BowConfig();
+        bowConfig.setName(name);
+        bowConfig.setDescription(description);
+        AsyncTask.execute(new Runnable() {
+            @Override
+            public void run() {
+                bowManager.bowConfigDao().insertAll(bowConfig);
+                for (PositionPair pair : bowConfig.getPositionArray())
+                {
+                    bowManager.positionPairDao().insertAll(pair);
+                }
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Intent intent = new Intent();
+                        intent.putExtra(CONFIG_TAG, bowConfig.getId());
+                        setResult(RESULT_OK, intent);
+                        finish();
+                    }
+                });
+            }
+        });
 
-        Intent intent = new Intent();
-        intent.putExtra(CONFIG_TAG, bowConfig.getId());
-        setResult(RESULT_OK, intent);
-        finish();
+
     }
 
     @Override
