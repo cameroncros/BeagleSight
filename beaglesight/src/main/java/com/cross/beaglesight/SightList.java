@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -34,6 +35,7 @@ import java.util.List;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
@@ -50,6 +52,7 @@ public class SightList extends AppCompatActivity implements BowListRecyclerViewA
     private FloatingActionButton fab;
 
     private static final int FILE_SELECT_CODE = 0;
+    private static final int IMPORT_FILES = 1;
     private static final int ADD_BOW = 2;
     private BowListRecyclerViewAdapter adapter;
 
@@ -113,17 +116,29 @@ public class SightList extends AppCompatActivity implements BowListRecyclerViewA
                 startActivityForResult(addIntent, ADD_BOW);
                 return true;
             case R.id.action_import:
-                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                    String[] permissions = new String[]{
-                            Manifest.permission.READ_EXTERNAL_STORAGE
-                    };
-                    ActivityCompat.requestPermissions(this, permissions, 1);
-                    return true;
-                }
-                importConfig();
+                String[] permissions = new String[]{
+                        Manifest.permission.READ_EXTERNAL_STORAGE
+                };
+                ActivityCompat.requestPermissions(this, permissions, IMPORT_FILES);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        for (int grantResult : grantResults) {
+            if (grantResult != PackageManager.PERMISSION_GRANTED) {
+                return;
+            }
+        }
+
+        switch (requestCode) {
+            case IMPORT_FILES:
+                importConfig();
+                break;
         }
     }
 

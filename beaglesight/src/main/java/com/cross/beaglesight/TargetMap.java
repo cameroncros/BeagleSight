@@ -61,12 +61,15 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
 import static android.view.View.GONE;
 
 public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, LocationListener, GoogleMap.OnCameraMoveStartedListener, GoogleMap.OnMarkerClickListener {
     private static final int FILE_SELECT_CODE = 1;
+    private static final int IMPORT_FILES = 2;
+    private static final int TRACK_LOCATION = 3;
     private volatile GoogleMap mMap = null;
     private TargetManager tm;
     private LocationManager locationManager;
@@ -84,6 +87,8 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
     private Target selectedTarget = null;
     private ProgressDialog mProgressDialog;
     private static String downloadURL = "https://raw.githubusercontent.com/cameroncros/BeagleSight/master/default_configs/targets.xml";
+    private MapView mMapView;
+    private boolean isTracking = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -93,14 +98,14 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
         targetInfo = findViewById(R.id.targetInfo);
         targetDescription = findViewById(R.id.targetDescription);
         targetDistance = findViewById(R.id.targetDistance);
 
-        MapView mMapView = findViewById(R.id.map);
+        mMapView = findViewById(R.id.map);
         mMapView.onCreate(savedInstanceState);
-
-        mMapView.onResume(); // needed to get the map to display immediately
 
         try {
             MapsInitializer.initialize(getApplicationContext());
@@ -109,6 +114,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         }
 
         mMapView.getMapAsync(this);
+        mMapView.onResume(); // needed to get the map to display immediately
 
         // Initialise TargetManager
         tm = TargetManager.getInstance(this);
@@ -132,6 +138,30 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
     }
 
+    @SuppressLint("MissingPermission")
+    private void trackLocation() {
+        synchronized (this) {
+            if (!isTracking) {
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
+                mMap.setMyLocationEnabled(true);
+                isTracking = true;
+            }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    @Override
+    public void onPause() {
+        super.onPause();
+        synchronized (this) {
+            if (isTracking) {
+                locationManager.removeUpdates(this);
+                mMap.setMyLocationEnabled(false);
+                isTracking = false;
+            }
+        }
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -149,14 +179,10 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
                 startActivity(new Intent(this, EditTarget.class));
                 return true;
             case R.id.action_import:
-                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                    String[] permissions = new String[]{
-                            Manifest.permission.READ_EXTERNAL_STORAGE
-                    };
-                    ActivityCompat.requestPermissions(this, permissions, 1);
-                    return true;
-                }
-                importConfig();
+                String[] permissions = new String[]{
+                        Manifest.permission.READ_EXTERNAL_STORAGE
+                };
+                ActivityCompat.requestPermissions(this, permissions, IMPORT_FILES);
                 return true;
             case R.id.action_export:
                 AsyncTask.execute(new Runnable() {
@@ -208,19 +234,22 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         }
     }
 
-    @SuppressLint("MissingPermission")
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (requestCode != 1) {
-            return;
-        }
-
         for (int grantResult : grantResults) {
             if (grantResult != PackageManager.PERMISSION_GRANTED) {
                 return;
             }
         }
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
+
+        switch (requestCode) {
+            case TRACK_LOCATION:
+                trackLocation();
+                break;
+            case IMPORT_FILES:
+                importConfig();
+                break;
+        }
     }
 
     /**
@@ -239,19 +268,16 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         mMap.setOnCameraMoveStartedListener(this);
         mMap.setMinZoomPreference(15);
 
-        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                    && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                 String[] permissions = new String[]{
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.ACCESS_COARSE_LOCATION
+                        Manifest.permission.ACCESS_FINE_LOCATION
                 };
-                ActivityCompat.requestPermissions(this, permissions, 1);
-                return;
+                ActivityCompat.requestPermissions(this, permissions, TRACK_LOCATION);
             }
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
-            mMap.setMyLocationEnabled(true);
+        } else {
+            trackLocation();
         }
 
         LatLng latLng = new LatLng(-37.625729, 145.130766);
