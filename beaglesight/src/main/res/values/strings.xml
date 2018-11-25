@@ -42,4 +42,5 @@
     <string name="action_update">Update Public Targets</string>
     <string name="action_export">Export</string>
     <string name="download_message">Downloading public targets…</string>
+    <string name="targets_url">https://raw.githubusercontent.com/cameroncros/BeagleSight/master/default_configs/targets.xml</string>
 </resources>

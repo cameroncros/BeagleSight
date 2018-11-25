@@ -86,8 +86,6 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
     private LocationDescription selectedShootLocation = null;
     private Target selectedTarget = null;
     private ProgressDialog mProgressDialog;
-    private static String downloadURL = "https://raw.githubusercontent.com/cameroncros/BeagleSight/master/default_configs/targets.xml";
-    private MapView mMapView;
     private boolean isTracking = false;
 
     @Override
@@ -104,7 +102,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         targetDescription = findViewById(R.id.targetDescription);
         targetDistance = findViewById(R.id.targetDistance);
 
-        mMapView = findViewById(R.id.map);
+        MapView mMapView = findViewById(R.id.map);
         mMapView.onCreate(savedInstanceState);
 
         try {
@@ -221,7 +219,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
                     File defaultsFile = File.createTempFile("Targets", ".xml");
                     mProgressDialog.show();
                     Intent intent = new Intent(this, DownloadService.class);
-                    intent.putExtra(DownloadService.URL, downloadURL);
+                    intent.putExtra(DownloadService.URL, getString(R.string.targets_url));
                     intent.putExtra(DownloadService.PATH, defaultsFile.getAbsolutePath());
                     intent.putExtra(DownloadService.RECEIVER, new DownloadReceiver(new Handler()));
                     startService(intent);
