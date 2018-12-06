@@ -1,6 +1,7 @@
 package com.cross.beaglesightlibs;
 
 import android.location.Location;
+import android.location.LocationManager;
 import android.os.Build;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -239,6 +240,18 @@ public class LocationDescription implements Parcelable {
         return String.format(Locale.ENGLISH,
                 "Lat: %.03f Long: %.03f Alt: %.02f",
                 latitude, longitude, altitude);
+    }
+
+    public Location getLocation() {
+        Location location = new Location(LocationManager.GPS_PROVIDER);
+        location.setLatitude(latitude);
+        location.setLongitude(longitude);
+        location.setAltitude(altitude);
+        location.setAccuracy(latlng_accuracy);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            location.setVerticalAccuracyMeters(altitude_accuracy);
+        }
+        return location;
     }
 
     @Dao
