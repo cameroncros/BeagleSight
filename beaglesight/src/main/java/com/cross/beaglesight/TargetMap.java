@@ -130,6 +130,14 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
             }
         });
 
+        FloatingActionButton arButton = findViewById(R.id.arMode);
+        arButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startActivity(new Intent(TargetMap.this, TargetAR.class));
+            }
+        });
+
         mProgressDialog = new ProgressDialog(TargetMap.this);
         mProgressDialog.setMessage(getString(R.string.download_message));
         mProgressDialog.setIndeterminate(true);
@@ -141,6 +149,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         synchronized (this) {
             if (!isTracking) {
                 locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
+                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, this);
                 mMap.setMyLocationEnabled(true);
                 isTracking = true;
             }
@@ -266,11 +275,12 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         mMap.setOnCameraMoveStartedListener(this);
         mMap.setMinZoomPreference(15);
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                 String[] permissions = new String[]{
-                        Manifest.permission.ACCESS_FINE_LOCATION
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
                 };
                 ActivityCompat.requestPermissions(this, permissions, TRACK_LOCATION);
             }
@@ -355,6 +365,8 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
 
     private void focusMap() {
         if (trackLocation && currentLocation != null) {
+            refocusButton.hide();
+            refocusButton.invalidate();
             Float zoom = 20f;
             Float tilt = 0f;
             LatLng latLng = new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude());
@@ -368,8 +380,6 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         currentLocation = location;
         progressBar.setVisibility(View.GONE);
         progressBar.invalidate();
-        refocusButton.hide();
-        refocusButton.invalidate();
         focusMap();
         updateTargetInfo();
     }
@@ -480,6 +490,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
                             tm.locationDescriptionDao().insertAll(locationDescription);
                         }
                     }
+                    getTargets();
                 }
             });
         } catch (IOException | ParserConfigurationException | SAXException e) {
