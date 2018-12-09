@@ -260,7 +260,7 @@ public class LocationDescription implements Parcelable {
         List<LocationDescription> getAll();
 
         @Query("SELECT * FROM locationdescription WHERE targetId IN (:targetId)")
-        List<LocationDescription> getLocationsForTarget(String targetId);
+        List<LocationDescription> getLocationsForTargetId(String targetId);
 
         @Insert(onConflict = REPLACE)
         void insertAll(LocationDescription... locationDescriptions);

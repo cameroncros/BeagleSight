@@ -200,11 +200,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
                         shareIntent.setType("text/xml");
                         ArrayList<Uri> uris = new ArrayList<>();
 
-                        List<Target> targets = tm.targetDao().getAll();
-                        for (Target target : targets) {
-                            List<LocationDescription> shootPositions = tm.locationDescriptionDao().getLocationsForTarget(target.getId());
-                            target.setShootLocations(shootPositions);
-                        }
+                        List<Target> targets = tm.getTargetsWithShootPositions();
                         try {
                             String filename = new Date().toString();
 
@@ -299,12 +295,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
             @Override
             public void run() {
                 targetListMap.clear();
-                List<Target> targets = tm.targetDao().getAll();
-                for (Target target : targets) {
-                    List<LocationDescription> shootLocations = tm.locationDescriptionDao().getLocationsForTarget(target.getTargetLocation().getTargetId());
-                    targetListMap.put(target, shootLocations);
-                }
-
+                List<Target> targets = tm.getTargets();
                 renderTargets();
             }
         });
@@ -484,12 +475,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
             AsyncTask.execute(new Runnable() {
                 @Override
                 public void run() {
-                    for (Target target : targets) {
-                        tm.targetDao().insertAll(target);
-                        for (LocationDescription locationDescription : target.getShootLocations()) {
-                            tm.locationDescriptionDao().insertAll(locationDescription);
-                        }
-                    }
+                    tm.saveTargets(targets);
                     getTargets();
                 }
             });

@@ -258,7 +258,7 @@ public class TargetAR extends AppCompatActivity implements SensorEventListener, 
         AsyncTask.execute(new Runnable() {
             @Override
             public void run() {
-                List<Target> targets = tm.targetDao().getAll();
+                List<Target> targets = tm.getTargets();
                 arView.setTargets(targets);
             }
         });

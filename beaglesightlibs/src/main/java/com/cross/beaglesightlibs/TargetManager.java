@@ -3,6 +3,7 @@ package com.cross.beaglesightlibs;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.AsyncTask;
+import android.util.Log;
 
 import com.cross.beaglesightlibs.exceptions.InvalidNumberFormatException;
 
@@ -41,6 +42,46 @@ public abstract class TargetManager extends RoomDatabase {
             }
         }
         return instance;
+    }
+
+    public List<Target> getTargets()
+    {
+        return targetDao().getAll();
+    }
+
+    public List<Target> getTargetsWithShootPositions()
+    {
+        Target.TargetDao targetDao = targetDao();
+        LocationDescription.LocationDescriptionDao locationDescriptionDao = locationDescriptionDao();
+        List<Target> targets = targetDao.getAll();
+        for (Target target : targets)
+        {
+            target.setShootLocations(locationDescriptionDao.getLocationsForTargetId(target.getId()));
+        }
+        return targets;
+    }
+
+    public void saveTargets(List<Target> targets)
+    {
+        Target.TargetDao targetDao = targetDao();
+        LocationDescription.LocationDescriptionDao locationDescriptionDao = locationDescriptionDao();
+        for (Target target : targets)
+        {
+            targetDao.insertAll(target);
+            List<LocationDescription> locations = target.getShootLocations();
+            if (locations != null)
+            {
+                for (LocationDescription location : locations)
+                {
+                    if (!location.getTargetId().equals(target.getId()))
+                    {
+                        Log.e("BeagleSight", "Shootlocation has incorrect targetID");
+                        location.setTargetId(target.getId());
+                    }
+                    locationDescriptionDao.insertAll(location);
+                }
+            }
+        }
     }
 }
 

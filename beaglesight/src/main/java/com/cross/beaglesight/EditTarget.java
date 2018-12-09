@@ -93,6 +93,7 @@ public class EditTarget extends AppCompatActivity implements LocationFragment.On
                 Intent editLocationIntent = new Intent(getApplicationContext(), EditLocation.class);
                 LocationDescription shootLocation = new LocationDescription();
                 shootLocation.setLocationId(UUID.randomUUID().toString());
+                shootLocation.setTargetId(target.getId());
                 editLocationIntent.putExtra(LOCATION_KEY, shootLocation);
                 startActivityForResult(editLocationIntent, EDIT_LOCATION);
             }
