@@ -8,6 +8,7 @@ import android.graphics.Paint;
 import android.hardware.SensorManager;
 import android.location.Location;
 import android.util.AttributeSet;
+import android.view.Surface;
 import android.view.View;
 
 import com.cross.beaglesight.BuildConfig;
@@ -31,6 +32,7 @@ public class ARView extends View {
     private double contentHeightStart;
     private double contentHeightEnd;
     private double phoneRotation = NaN;
+    private double viewRotation = NaN;
     private double phonePitch = NaN;
     private double phoneBearing = NaN;
 
@@ -42,7 +44,7 @@ public class ARView extends View {
     private static float[] mRotationMatrix = new float[9];
     private static float[] orientationVals = new float[3];
 
-    private static double FOV = Math.PI / 3;  // Field of view for camera. Guessed, but should be close enough.
+    private double FOV = Math.PI / 3;
     private Paint black;
 
     public ARView(Context context) {
@@ -131,14 +133,12 @@ public class ARView extends View {
         //        #####
         //     Z-   Y+
         // This may not be the best way, and certainly will have gimbal lock issues.
+
         double vectorMagnitude = Math.sqrt(values[X] * values[X] + values[Y] * values[Y] + values[Z] * values[Z]);
         phonePitch = (Math.acos(values[Z] / vectorMagnitude) - Math.PI / 2);
         phoneRotation = Math.atan(values[X] / values[Y]);
         if (values[Y] < 0) {
             phoneRotation += Math.PI;
-        }
-        if (phoneRotation > Math.PI) {
-            phoneRotation -= 2 * Math.PI;
         }
         invalidate();
     }
@@ -156,6 +156,10 @@ public class ARView extends View {
         SensorManager.getOrientation(mRotationMatrix, orientationVals);
 
         phoneBearing = orientationVals[0];
+    }
+
+    public void setFOV(double vert, double horz) {
+        FOV = horz;
     }
 
     private void precalcTargetLocations() {
@@ -202,8 +206,9 @@ public class ARView extends View {
             double yPixelDiff = pitchDiff * (contentWidthEnd - contentWidthStart) / FOV;
 
             // Rotate pixel locations.
-            double xPixelRot = (Math.cos(phoneRotation) * xPixelDiff) + (Math.sin(phoneRotation) * yPixelDiff);
-            double yPixelRot = (Math.sin(phoneRotation) * xPixelDiff) - (Math.cos(phoneRotation) * yPixelDiff);
+            double rotation = phoneRotation + viewRotation - Math.PI/2;
+            double xPixelRot = (Math.cos(rotation) * xPixelDiff) + (Math.sin(rotation) * yPixelDiff);
+            double yPixelRot = (Math.sin(rotation) * xPixelDiff) - (Math.cos(rotation) * yPixelDiff);
 
             // Translate the pixels locations to the center of the screen.
             double xPixel = -xPixelRot + (contentWidthEnd - contentWidthStart) / 2;
@@ -211,6 +216,10 @@ public class ARView extends View {
 
             canvas.drawCircle((float) xPixel, (float) yPixel, 10, black);
         }
+    }
+
+    public void setViewRotation(double rotation) {
+        viewRotation = rotation;
     }
 
     class RenderableTarget {

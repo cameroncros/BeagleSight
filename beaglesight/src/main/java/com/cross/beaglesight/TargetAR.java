@@ -7,8 +7,10 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.hardware.Camera;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -19,7 +21,11 @@ import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.view.MotionEvent;
+import android.view.Surface;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.MenuItem;
 import android.widget.Toast;
@@ -40,7 +46,8 @@ import androidx.core.content.ContextCompat;
  * An example full-screen activity that shows and hides the system UI (i.e.
  * status bar and navigation/system bar) with user interaction.
  */
-public class TargetAR extends AppCompatActivity implements SensorEventListener, LocationListener {
+public class TargetAR extends AppCompatActivity implements SensorEventListener, LocationListener, SurfaceHolder.Callback {
+    private static final int OPEN_CAMERA = 2;
     private static final int TRACK_LOCATION = 3;
     /**
      * Whether or not the system UI should be auto-hidden after
@@ -111,6 +118,9 @@ public class TargetAR extends AppCompatActivity implements SensorEventListener, 
     };
     private SensorManager sensorManager;
     private LocationManager locationManager;
+    private SurfaceView cameraView;
+    private Camera camera;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -123,6 +133,18 @@ public class TargetAR extends AppCompatActivity implements SensorEventListener, 
 
         mVisible = true;
         arView = findViewById(R.id.arView);
+
+        cameraView = findViewById(R.id.cameraView);
+
+        cameraView.getHolder().addCallback(this);
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            String[] permissions = new String[]{
+                    Manifest.permission.CAMERA
+            };
+            ActivityCompat.requestPermissions(this, permissions, OPEN_CAMERA);
+        } else {
+            camera = Camera.open();
+        }
 
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -166,6 +188,7 @@ public class TargetAR extends AppCompatActivity implements SensorEventListener, 
     @Override
     public void onPause() {
         super.onPause();
+        camera.stopPreview();
         synchronized (this) {
             locationManager.removeUpdates(this);
             sensorManager.unregisterListener(this);
@@ -241,6 +264,9 @@ public class TargetAR extends AppCompatActivity implements SensorEventListener, 
             case TRACK_LOCATION:
                 trackLocation();
                 break;
+            case OPEN_CAMERA:
+                camera = Camera.open();
+                break;
         }
     }
 
@@ -304,5 +330,84 @@ public class TargetAR extends AppCompatActivity implements SensorEventListener, 
     private void delayedHide(int delayMillis) {
         mHideHandler.removeCallbacks(mHideRunnable);
         mHideHandler.postDelayed(mHideRunnable, delayMillis);
+    }
+
+    public void refreshCamera() {
+        if (cameraView.getHolder().getSurface() == null) {
+            // preview surface does not exist
+            return;
+        }
+
+        // stop preview before making changes
+        try {
+            camera.stopPreview();
+        } catch (Exception ignored) {
+        }
+        // set preview size and make any resize, rotate or
+        // reformatting changes here
+        // start preview with new settings
+        try {
+            int rotation = getWindowManager().getDefaultDisplay().getRotation();
+            int degrees = 0;
+
+            switch (rotation) {
+                case Surface.ROTATION_0: degrees = 90; break;
+                case Surface.ROTATION_90: degrees = 0; break;
+                case Surface.ROTATION_180: degrees = 270; break;
+                case Surface.ROTATION_270: degrees = 180; break;
+            }
+            Camera.Parameters param;
+            param = camera.getParameters();
+            Camera.Size size = CameraUtils.getBestAspectPreviewSize(degrees,
+                    cameraView.getWidth(),
+                    cameraView.getHeight(),
+                    param);
+            param.setPreviewSize(size.width, size.height);
+
+            camera.setParameters(param);
+            camera.setDisplayOrientation(degrees);
+            arView.setViewRotation(Math.toRadians(degrees));
+            camera.setPreviewDisplay(cameraView.getHolder());
+            camera.startPreview();
+        } catch (Exception ignored) {
+        }
+    }
+
+
+    @Override
+    public void surfaceCreated(SurfaceHolder surfaceHolder) {
+        try {
+            // open the camera
+            camera = Camera.open();
+        } catch (RuntimeException e) {
+            // check for exceptions
+            System.err.println(e);
+            return;
+        }
+
+        try {
+            // The Surface has been created, now tell the camera where to draw
+            // the preview.
+            camera.setPreviewDisplay(surfaceHolder);
+            camera.startPreview();
+        } catch (Exception e) {
+            // check for exceptions
+            System.err.println(e);
+        }
+    }
+
+    @Override
+    public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
+        // Now that the size is known, set up the camera parameters and begin
+        // the preview.
+        refreshCamera();
+    }
+
+    @Override
+    public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
+        // stop preview and release camera
+        camera.stopPreview();
+        camera.release();
+        camera = null;
     }
 }
