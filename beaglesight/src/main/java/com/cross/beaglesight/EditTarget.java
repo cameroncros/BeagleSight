@@ -32,13 +32,13 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import static com.cross.beaglesight.EditLocation.LOCATION_KEY;
+
 public class EditTarget extends AppCompatActivity implements LocationFragment.OnLocationFragmentInteractionListener {
 
     private static final int EDIT_LOCATION = 1;
-    static final String LOCATION_KEY = "location";
+    static final String TARGET_KEY = "target";
     private Target target;
-    private Map<String, LocationDescription> shootLocations;
-    private TargetManager tm;
     private List<LocationFragment> locationFragments = new ArrayList<>();
     private EditText name;
 
@@ -50,14 +50,13 @@ public class EditTarget extends AppCompatActivity implements LocationFragment.On
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        tm = TargetManager.getInstance(this);
-
-        target = new Target();
-        target.setTargetLocation(new LocationDescription());
+        target = getIntent().getParcelableExtra(TARGET_KEY);
+        if (target == null) {
+            target = new Target();
+            target.setTargetLocation(new LocationDescription());
+        }
 
         name = findViewById(R.id.textName);
-
-        shootLocations = new HashMap<>();
 
         final FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -67,21 +66,10 @@ public class EditTarget extends AppCompatActivity implements LocationFragment.On
                 fab.invalidate();
                 target.setName(name.getText().toString());
 
-                AsyncTask.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        tm.targetDao().insertAll(target);
-                        for (LocationDescription locationDescription : shootLocations.values()) {
-                            tm.locationDescriptionDao().insertAll(locationDescription);
-                        }
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                finish();
-                            }
-                        });
-                    }
-                });
+                Intent intent = new Intent();
+                intent.putExtra(TARGET_KEY, target);
+                setResult(RESULT_OK, intent);
+                finish();
             }
         });
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -118,7 +106,7 @@ public class EditTarget extends AppCompatActivity implements LocationFragment.On
                     if (target.getTargetLocation().getLocationId().equals(location.getLocationId())) {
                         target.setTargetLocation(location);
                     } else {
-                        shootLocations.put(location.getLocationId(), location);
+                        target.addShootLocation(location);
                     }
                 }
         }
@@ -126,7 +114,7 @@ public class EditTarget extends AppCompatActivity implements LocationFragment.On
 
     @Override
     public void onDelete(LocationDescription item) {
-        shootLocations.remove(item.getLocationId());
+        target.removeShootLocation(item);
         redraw();
     }
 
@@ -151,7 +139,7 @@ public class EditTarget extends AppCompatActivity implements LocationFragment.On
             fragmentTransaction.remove(locationFragment);
         }
 
-        for (LocationDescription locationDescription : shootLocations.values()) {
+        for (LocationDescription locationDescription : target.getShootLocations()) {
             LocationFragment locationFragment = LocationFragment.newInstance(locationDescription, true);
             locationFragments.add(locationFragment);
             fragmentTransaction.add(R.id.shootLocationsList, locationFragment);

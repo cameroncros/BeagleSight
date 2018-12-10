@@ -31,6 +31,8 @@ import androidx.room.RoomDatabase;
 public abstract class TargetManager extends RoomDatabase {
     @SuppressLint("StaticFieldLeak")
     private static volatile TargetManager instance;
+    private static LocationDescription.LocationDescriptionDao locationDescriptionDao;
+    private static Target.TargetDao targetDao;
 
     public abstract Target.TargetDao targetDao();
     public abstract LocationDescription.LocationDescriptionDao locationDescriptionDao();
@@ -39,6 +41,9 @@ public abstract class TargetManager extends RoomDatabase {
         synchronized (TargetManager.class) {
             if (instance == null && cont != null) {
                 instance = Room.databaseBuilder(cont, TargetManager.class, "targets").build();
+
+                targetDao = instance.targetDao();
+                locationDescriptionDao = instance.locationDescriptionDao();
             }
         }
         return instance;
@@ -51,8 +56,6 @@ public abstract class TargetManager extends RoomDatabase {
 
     public List<Target> getTargetsWithShootPositions()
     {
-        Target.TargetDao targetDao = targetDao();
-        LocationDescription.LocationDescriptionDao locationDescriptionDao = locationDescriptionDao();
         List<Target> targets = targetDao.getAll();
         for (Target target : targets)
         {
@@ -63,23 +66,30 @@ public abstract class TargetManager extends RoomDatabase {
 
     public void saveTargets(List<Target> targets)
     {
-        Target.TargetDao targetDao = targetDao();
-        LocationDescription.LocationDescriptionDao locationDescriptionDao = locationDescriptionDao();
         for (Target target : targets)
         {
-            targetDao.insertAll(target);
-            List<LocationDescription> locations = target.getShootLocations();
-            if (locations != null)
+            saveTarget(target);
+        }
+    }
+
+    public void deleteTarget(Target selectedTarget) {
+        // Should CASCADE through and remove all shoot positions as well.
+        targetDao.delete(selectedTarget);
+    }
+
+    public void saveTarget(Target target) {
+        targetDao.insertAll(target);
+        List<LocationDescription> locations = target.getShootLocations();
+        if (locations != null)
+        {
+            for (LocationDescription location : locations)
             {
-                for (LocationDescription location : locations)
+                if (!location.getTargetId().equals(target.getId()))
                 {
-                    if (!location.getTargetId().equals(target.getId()))
-                    {
-                        Log.e("BeagleSight", "Shootlocation has incorrect targetID");
-                        location.setTargetId(target.getId());
-                    }
-                    locationDescriptionDao.insertAll(location);
+                    Log.e("BeagleSight", "Shootlocation has incorrect targetID");
+                    location.setTargetId(target.getId());
                 }
+                locationDescriptionDao.insertAll(location);
             }
         }
     }

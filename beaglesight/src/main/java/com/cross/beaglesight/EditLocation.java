@@ -17,7 +17,6 @@ import android.widget.TextView;
 
 import com.cross.beaglesightlibs.LocationDescription;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
 
 import java.text.DecimalFormat;
 
@@ -27,10 +26,9 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import static com.cross.beaglesight.EditTarget.LOCATION_KEY;
-
 public class EditLocation extends AppCompatActivity implements LocationListener {
     private static final int TRACK_LOCATION = 1;
+    static final String LOCATION_KEY = "location";
     private LocationDescription locationDescription;
     private TextView longitude;
     private TextView latitude;

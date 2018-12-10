@@ -1,5 +1,8 @@
 package com.cross.beaglesightlibs;
 
+import android.os.Parcel;
+
+import org.junit.Before;
 import org.robolectric.RobolectricTestRunner;
 import org.xml.sax.SAXException;
 
@@ -22,22 +25,17 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(RobolectricTestRunner.class)
-public class XmlParserTest {
-    @Test
-    public void ParsePublishedTargets() throws ParserConfigurationException, SAXException, IOException {
-        File targetFile = new File("../default_configs/targets.xml");
-        FileInputStream fis = new FileInputStream(targetFile);
-        List<Target> targets = XmlParser.parseTargetsXML(fis);
-        assertNotEquals(0, targets.size());
+public class TargetTest {
+    private ArrayList<Target> targets;
+    private Target target;
+    private Target target2;
 
-    }
+    @Before
+    public void setup()
+    {
+        targets = new ArrayList<>();
 
-    @Test
-    public void ParseTarget() throws ParserConfigurationException, SAXException, IOException {
-
-        List<Target> targets = new ArrayList<>();
-
-        Target target = new Target();
+        target = new Target();
         target.setName(randomString());
         target.setBuiltin(false);
         target.setId(randomString());
@@ -51,7 +49,7 @@ public class XmlParserTest {
         }
         target.setShootLocations(positionList);
 
-        Target target2 = new Target();
+        target2 = new Target();
         target2.setName(randomString());
         target2.setBuiltin(true);
         target2.setId(randomString());
@@ -60,8 +58,18 @@ public class XmlParserTest {
 
         targets.add(target);
         targets.add(target2);
+    }
 
+    @Test
+    public void PublishedTargetsXML() throws ParserConfigurationException, SAXException, IOException {
+        File targetFile = new File("../default_configs/targets.xml");
+        FileInputStream fis = new FileInputStream(targetFile);
+        List<Target> targets = XmlParser.parseTargetsXML(fis);
+        assertNotEquals(0, targets.size());
+    }
 
+    @Test
+    public void TargetXML() throws ParserConfigurationException, SAXException, IOException {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         XmlParser.serialiseTargets(outputStream, targets);
 
@@ -73,6 +81,28 @@ public class XmlParserTest {
         assertEquals(targets.size(), targetList.size());
         assertTrue(targetList.contains(target));
         assertTrue(targetList.contains(target2));
+    }
+
+    @Test
+    public void TargetParcelable() {
+        {
+            Parcel parcel = Parcel.obtain();
+            target.writeToParcel(parcel, target.describeContents());
+            parcel.setDataPosition(0);
+
+            Target targetOut = Target.CREATOR.createFromParcel(parcel);
+
+            assertEquals(target, targetOut);
+        }
+        {
+            Parcel parcel2 = Parcel.obtain();
+            target2.writeToParcel(parcel2, target2.describeContents());
+            parcel2.setDataPosition(0);
+
+            Target targetOut2 = Target.CREATOR.createFromParcel(parcel2);
+
+            assertEquals(target2, targetOut2);
+        }
     }
 
     private String randomString() {
