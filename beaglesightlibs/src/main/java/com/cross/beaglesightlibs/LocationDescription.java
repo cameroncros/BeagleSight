@@ -263,7 +263,7 @@ public class LocationDescription implements Parcelable {
         List<LocationDescription> getLocationsForTargetId(String targetId);
 
         @Insert(onConflict = REPLACE)
-        void insertAll(LocationDescription... locationDescriptions);
+        void insert(LocationDescription locationDescriptions);
 
         @Delete
         void delete(LocationDescription locationDescription);

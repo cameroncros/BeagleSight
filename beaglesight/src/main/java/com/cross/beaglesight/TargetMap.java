@@ -20,7 +20,6 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -35,6 +34,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
@@ -55,7 +55,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
 import javax.xml.parsers.ParserConfigurationException;
 
@@ -209,7 +208,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
                         shareIntent.setType("text/xml");
                         ArrayList<Uri> uris = new ArrayList<>();
 
-                        List<Target> targets = tm.getTargetsWithShootPositions();
+                        List<Target> targets = tm.getTargetsWithShootPositions(true);
                         try {
                             String filename = new Date().toString();
 
@@ -303,7 +302,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         AsyncTask.execute(new Runnable() {
             @Override
             public void run() {
-                targets = tm.getTargetsWithShootPositions();
+                targets = tm.getTargetsWithShootPositions(false);
                 renderTargets();
             }
         });
@@ -336,10 +335,19 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
                 for (Target target : targets) {
                     LocationDescription targetLocation = target.getTargetLocation();
                     LatLng targetPos = targetLocation.getLatLng();
+
+                    float targetColor = BitmapDescriptorFactory.HUE_RED;
+                    float shootColor = BitmapDescriptorFactory.HUE_ROSE;
+                    if (target.isBuiltin())
+                    {
+                        targetColor = BitmapDescriptorFactory.HUE_ORANGE;
+                        shootColor = BitmapDescriptorFactory.HUE_YELLOW;
+                    }
+
                     Marker targetMarker = mMap.addMarker(new MarkerOptions()
                             .position(targetPos)
                             .title(target.getName())
-                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+                            .icon(BitmapDescriptorFactory.defaultMarker(targetColor)));
                     markerOptionsTargetMap.put(targetMarker, target);
 
                     List<LocationDescription> shootLocations = target.getShootLocations();
@@ -349,7 +357,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
                             Marker shootMarker = mMap.addMarker(new MarkerOptions()
                                     .position(shootPos)
                                     .title(shootLocation.getDescription())
-                                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_CYAN)));
+                                    .icon(BitmapDescriptorFactory.defaultMarker(shootColor)));
                             markerOptionsTargetMap.put(shootMarker, target);
                             markerOptionsLocationDescriptionMap.put(shootMarker, shootLocation);
 

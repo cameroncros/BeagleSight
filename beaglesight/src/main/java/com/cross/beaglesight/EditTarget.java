@@ -56,6 +56,16 @@ public class EditTarget extends AppCompatActivity implements LocationFragment.On
             target.setTargetLocation(new LocationDescription());
         }
 
+        // If the target is a built-in, duplicate it rather than editting the built-in version.
+        // The built-in one can be deleted by the user.
+        if (target.isBuiltin()) {
+            target.setBuiltin(false);
+            target.setId(UUID.randomUUID().toString());
+            for (LocationDescription shootPos : target.getShootLocations())
+            {
+                shootPos.setTargetId(target.getId());
+            }
+        }
         name = findViewById(R.id.textName);
 
         final FloatingActionButton fab = findViewById(R.id.fab);
