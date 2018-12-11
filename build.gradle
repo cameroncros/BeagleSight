@@ -22,5 +22,5 @@ allprojects {
         }
     }
     project.ext.set("versionCode", 19)
-    project.ext.set("versionName", "0.1.9")
+    project.ext.set("versionName", "0.1.9in ")
 }
