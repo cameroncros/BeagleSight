@@ -37,7 +37,6 @@ public class AddDistance extends AppCompatActivity {
 
     private BowManager bm = null;
     private BowConfig bowConfig = null;
-    private String bowid;
 
 
     private void updateAddStatus() {
@@ -161,21 +160,12 @@ public class AddDistance extends AppCompatActivity {
                 Float distance = Float.parseFloat(simpleDistance.getText().toString());
                 Float pinSetting = Float.parseFloat(simplePin.getText().toString());
                 final PositionPair pair = new PositionPair(distance, pinSetting);
-                pair.setBowId(bowid);
-                AsyncTask.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        bm.positionPairDao().insertAll(pair);
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Intent intent = new Intent();
-                                setResult(RESULT_OK, intent);
-                                finish();
-                            }
-                        });
-                    }
-                });
+                pair.setBowId(bowConfig.getId());
+                bowConfig.getPositionArray().add(pair);
+                Intent intent = new Intent();
+                intent.putExtra(CONFIG_TAG, bowConfig);
+                setResult(RESULT_OK, intent);
+                finish();
             } catch (NumberFormatException nfe) {
                 add.setEnabled(false);
             }
@@ -193,7 +183,7 @@ public class AddDistance extends AppCompatActivity {
 
 
         Intent intent = getIntent();
-        bowid = (String) intent.getSerializableExtra(CONFIG_TAG);
+        bowConfig = intent.getParcelableExtra(CONFIG_TAG);
         bm = BowManager.getInstance(this);
 
         add = findViewById(R.id.addDistance);

@@ -1,7 +1,12 @@
 package com.cross.beaglesightlibs;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 
 import androidx.annotation.NonNull;
 import androidx.room.Dao;
@@ -16,8 +21,7 @@ import androidx.room.Transaction;
 import static androidx.room.OnConflictStrategy.REPLACE;
 
 @Entity
-public class BowConfig {
-
+public class BowConfig implements Parcelable {
     @PrimaryKey
     @NonNull
     private String id = "";
@@ -27,10 +31,11 @@ public class BowConfig {
     @Ignore
     private List<PositionPair> positionArray = new ArrayList<>();
     @Ignore
-    PositionCalculator positionCalculator;
+    private PositionCalculator positionCalculator;
 
-    public BowConfig() {
-        initPositionCalculator();
+    public BowConfig()
+    {
+
     }
 
     @NonNull
@@ -67,19 +72,73 @@ public class BowConfig {
     }
 
     public PositionCalculator getPositionCalculator() {
+        if (positionCalculator == null) {
+            positionCalculator = new LineOfBestFitCalculator();
+        }
         return positionCalculator;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return String.format("ID: %s, Name: %s, Desc: %s", id, name, description);
     }
 
-    public void initPositionCalculator()
-    {
-        positionCalculator = new LineOfBestFitCalculator();
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof BowConfig)) return false;
+        BowConfig bowConfig = (BowConfig) o;
+        return Objects.equals(id, bowConfig.id) &&
+                Objects.equals(name, bowConfig.name) &&
+                Objects.equals(description, bowConfig.description) &&
+                Objects.equals(positionArray, bowConfig.positionArray);
     }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, description, positionArray, positionCalculator);
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel parcel, int i) {
+        parcel.writeString(id);
+        parcel.writeString(name);
+        parcel.writeString(description);
+
+        for (PositionPair pair : positionArray)
+        {
+            parcel.writeParcelable(pair, i);
+        }
+    }
+
+    public BowConfig(Parcel in) {
+        id = in.readString();
+        name = in.readString();
+        description = in.readString();
+
+        while (in.dataPosition() < in.dataSize())
+        {
+            PositionPair pair = in.readParcelable(PositionPair.class.getClassLoader());
+            positionArray.add(pair);
+        }
+    }
+
+    public static final Creator<BowConfig> CREATOR = new Creator<BowConfig>() {
+        @Override
+        public BowConfig createFromParcel(Parcel in) {
+            return new BowConfig(in);
+        }
+
+        @Override
+        public BowConfig[] newArray(int size) {
+            return new BowConfig[size];
+        }
+    };
 
     @Dao
     public interface BowConfigDao {
@@ -88,7 +147,7 @@ public class BowConfig {
         List<BowConfig> getAll();
 
         @Insert(onConflict = REPLACE)
-        void insertAll(BowConfig bowConfig);
+        void insert(BowConfig bowConfig);
 
         @Delete
         void delete(BowConfig bowConfig);

@@ -4,7 +4,6 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -21,6 +20,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -34,6 +34,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
@@ -54,7 +55,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
 import javax.xml.parsers.ParserConfigurationException;
 
@@ -62,12 +62,17 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
 import static android.view.View.GONE;
+import static com.cross.beaglesight.EditTarget.TARGET_KEY;
 
 public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, LocationListener, GoogleMap.OnCameraMoveStartedListener, GoogleMap.OnMarkerClickListener {
     private static final int FILE_SELECT_CODE = 1;
+    private static final int IMPORT_FILES = 2;
+    private static final int TRACK_LOCATION = 3;
+    private static final int ADD_TARGET = 4;
     private volatile GoogleMap mMap = null;
     private TargetManager tm;
     private LocationManager locationManager;
@@ -75,7 +80,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
     private Location currentLocation = null;
     private ProgressBar progressBar;
     private FloatingActionButton refocusButton;
-    private Map<Target, List<LocationDescription>> targetListMap = new HashMap<>();
+    private List<Target> targets = new ArrayList<>();
     private Map<Marker, Target> markerOptionsTargetMap = new HashMap<>();
     private Map<Marker, LocationDescription> markerOptionsLocationDescriptionMap = new HashMap<>();
     private View targetInfo;
@@ -84,7 +89,9 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
     private LocationDescription selectedShootLocation = null;
     private Target selectedTarget = null;
     private ProgressDialog mProgressDialog;
-    private static String downloadURL = "https://raw.githubusercontent.com/cameroncros/BeagleSight/master/default_configs/targets.xml";
+    private boolean isTracking = false;
+    private ImageButton editButton;
+    private ImageButton deleteButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,14 +101,14 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
         targetInfo = findViewById(R.id.targetInfo);
         targetDescription = findViewById(R.id.targetDescription);
         targetDistance = findViewById(R.id.targetDistance);
 
         MapView mMapView = findViewById(R.id.map);
         mMapView.onCreate(savedInstanceState);
-
-        mMapView.onResume(); // needed to get the map to display immediately
 
         try {
             MapsInitializer.initialize(getApplicationContext());
@@ -110,6 +117,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         }
 
         mMapView.getMapAsync(this);
+        mMapView.onResume(); // needed to get the map to display immediately
 
         // Initialise TargetManager
         tm = TargetManager.getInstance(this);
@@ -127,10 +135,46 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
             }
         });
 
+        FloatingActionButton arButton = findViewById(R.id.arMode);
+        arButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startActivity(new Intent(TargetMap.this, TargetAR.class));
+            }
+        });
+
         mProgressDialog = new ProgressDialog(TargetMap.this);
-        mProgressDialog.setMessage("A message");
+        mProgressDialog.setMessage(getString(R.string.download_message));
         mProgressDialog.setIndeterminate(true);
         mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+
+        editButton = findViewById(R.id.editButton);
+        deleteButton = findViewById(R.id.deleteButton);
+    }
+
+    @SuppressLint("MissingPermission")
+    private void trackLocation() {
+        synchronized (this) {
+            if (!isTracking) {
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
+                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, this);
+                mMap.setMyLocationEnabled(true);
+                isTracking = true;
+            }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    @Override
+    public void onPause() {
+        super.onPause();
+        synchronized (this) {
+            if (isTracking) {
+                locationManager.removeUpdates(this);
+                mMap.setMyLocationEnabled(false);
+                isTracking = false;
+            }
+        }
     }
 
     @Override
@@ -145,20 +189,15 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        switch (id)
-        {
+        switch (id) {
             case R.id.action_add:
-                startActivity(new Intent(this, EditTarget.class));
+                startActivityForResult(new Intent(this, EditTarget.class), ADD_TARGET);
                 return true;
             case R.id.action_import:
-                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                    String[] permissions = new String[]{
-                            Manifest.permission.READ_EXTERNAL_STORAGE
-                    };
-                    ActivityCompat.requestPermissions(this, permissions, 1);
-                    return true;
-                }
-                importConfig();
+                String[] permissions = new String[]{
+                        Manifest.permission.READ_EXTERNAL_STORAGE
+                };
+                ActivityCompat.requestPermissions(this, permissions, IMPORT_FILES);
                 return true;
             case R.id.action_export:
                 AsyncTask.execute(new Runnable() {
@@ -169,11 +208,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
                         shareIntent.setType("text/xml");
                         ArrayList<Uri> uris = new ArrayList<>();
 
-                        List<Target> targets = tm.targetDao().getAll();
-                        for (Target target : targets) {
-                            List<LocationDescription> shootPositions = tm.locationDescriptionDao().getLocationsForTarget(target.getId());
-                            target.setShootLocations(shootPositions);
-                        }
+                        List<Target> targets = tm.getTargetsWithShootPositions(true);
                         try {
                             String filename = new Date().toString();
 
@@ -194,10 +229,10 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
                 return true;
             case R.id.action_update:
                 try {
-                    File defaultsFile = File.createTempFile("Targets", "xml");
+                    File defaultsFile = File.createTempFile("Targets", ".xml");
                     mProgressDialog.show();
                     Intent intent = new Intent(this, DownloadService.class);
-                    intent.putExtra(DownloadService.URL, downloadURL);
+                    intent.putExtra(DownloadService.URL, getString(R.string.targets_url));
                     intent.putExtra(DownloadService.PATH, defaultsFile.getAbsolutePath());
                     intent.putExtra(DownloadService.RECEIVER, new DownloadReceiver(new Handler()));
                     startService(intent);
@@ -210,19 +245,22 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         }
     }
 
-    @SuppressLint("MissingPermission")
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (requestCode != 1) {
-            return;
-        }
-
         for (int grantResult : grantResults) {
             if (grantResult != PackageManager.PERMISSION_GRANTED) {
                 return;
             }
         }
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
+
+        switch (requestCode) {
+            case TRACK_LOCATION:
+                trackLocation();
+                break;
+            case IMPORT_FILES:
+                importConfig();
+                break;
+        }
     }
 
     /**
@@ -241,19 +279,17 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         mMap.setOnCameraMoveStartedListener(this);
         mMap.setMinZoomPreference(15);
 
-        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                    && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                 String[] permissions = new String[]{
                         Manifest.permission.ACCESS_FINE_LOCATION,
                         Manifest.permission.ACCESS_COARSE_LOCATION
                 };
-                ActivityCompat.requestPermissions(this, permissions, 1);
-                return;
+                ActivityCompat.requestPermissions(this, permissions, TRACK_LOCATION);
             }
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
-            mMap.setMyLocationEnabled(true);
+        } else {
+            trackLocation();
         }
 
         LatLng latLng = new LatLng(-37.625729, 145.130766);
@@ -266,13 +302,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         AsyncTask.execute(new Runnable() {
             @Override
             public void run() {
-                targetListMap.clear();
-                List<Target> targets = tm.targetDao().getAll();
-                for (Target target : targets) {
-                    List<LocationDescription> shootLocations = tm.locationDescriptionDao().getLocationsForTarget(target.getTargetLocation().getTargetId());
-                    targetListMap.put(target, shootLocations);
-                }
-
+                targets = tm.getTargetsWithShootPositions(false);
                 renderTargets();
             }
         });
@@ -302,24 +332,32 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
 
                 mMap.clear();
 
-                Set<Target> targets = targetListMap.keySet();
                 for (Target target : targets) {
                     LocationDescription targetLocation = target.getTargetLocation();
                     LatLng targetPos = targetLocation.getLatLng();
+
+                    float targetColor = BitmapDescriptorFactory.HUE_RED;
+                    float shootColor = BitmapDescriptorFactory.HUE_ROSE;
+                    if (target.isBuiltin())
+                    {
+                        targetColor = BitmapDescriptorFactory.HUE_ORANGE;
+                        shootColor = BitmapDescriptorFactory.HUE_YELLOW;
+                    }
+
                     Marker targetMarker = mMap.addMarker(new MarkerOptions()
                             .position(targetPos)
                             .title(target.getName())
-                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+                            .icon(BitmapDescriptorFactory.defaultMarker(targetColor)));
                     markerOptionsTargetMap.put(targetMarker, target);
 
-                    List<LocationDescription> shootLocations = targetListMap.get(target);
+                    List<LocationDescription> shootLocations = target.getShootLocations();
                     if (shootLocations != null) {
                         for (LocationDescription shootLocation : shootLocations) {
                             LatLng shootPos = shootLocation.getLatLng();
                             Marker shootMarker = mMap.addMarker(new MarkerOptions()
                                     .position(shootPos)
                                     .title(shootLocation.getDescription())
-                                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_CYAN)));
+                                    .icon(BitmapDescriptorFactory.defaultMarker(shootColor)));
                             markerOptionsTargetMap.put(shootMarker, target);
                             markerOptionsLocationDescriptionMap.put(shootMarker, shootLocation);
 
@@ -333,6 +371,8 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
 
     private void focusMap() {
         if (trackLocation && currentLocation != null) {
+            refocusButton.hide();
+            refocusButton.invalidate();
             Float zoom = 20f;
             Float tilt = 0f;
             LatLng latLng = new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude());
@@ -346,8 +386,6 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         currentLocation = location;
         progressBar.setVisibility(View.GONE);
         progressBar.invalidate();
-        refocusButton.hide();
-        refocusButton.invalidate();
         focusMap();
         updateTargetInfo();
     }
@@ -386,13 +424,10 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         selectedShootLocation = null;
         selectedTarget = null;
 
-        if (markerOptionsLocationDescriptionMap.containsKey(marker))
-        {
+        if (markerOptionsLocationDescriptionMap.containsKey(marker)) {
             selectedShootLocation = markerOptionsLocationDescriptionMap.get(marker);
             selectedTarget = markerOptionsTargetMap.get(marker);
-        }
-        else if (markerOptionsTargetMap.containsKey(marker))
-        {
+        } else if (markerOptionsTargetMap.containsKey(marker)) {
             selectedTarget = markerOptionsTargetMap.get(marker);
         }
 
@@ -400,29 +435,52 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         return false;
     }
 
-    public void updateTargetInfo()
-    {
-        if (selectedShootLocation != null && selectedTarget != null)
+    public void updateTargetInfo() {
+        if (selectedTarget != null)
         {
+            editButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent intent = new Intent(TargetMap.this, EditTarget.class);
+                    intent.putExtra(TARGET_KEY, selectedTarget);
+                    startActivityForResult(intent, ADD_TARGET);
+                }
+            });
+            deleteButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    AsyncTask.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            tm.deleteTarget(selectedTarget);
+                            getTargets();
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    targetInfo.setVisibility(View.GONE);
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
+        if (selectedShootLocation != null && selectedTarget != null) {
             targetInfo.setVisibility(View.VISIBLE);
             targetDescription.setText(selectedShootLocation.getDescription());
             targetDistance.setText(getStats(selectedShootLocation, selectedTarget.getTargetLocation()));
-        }
-        else if (selectedTarget != null)
-        {
+        } else if (selectedTarget != null) {
             LocationDescription targetLocation = selectedTarget.getTargetLocation();
             targetInfo.setVisibility(View.VISIBLE);
             targetDescription.setText(targetLocation.getDescription());
             if (currentLocation != null) {
                 LocationDescription currentShootLocation = new LocationDescription(currentLocation);
                 targetDistance.setText(getStats(currentShootLocation, targetLocation));
-            }else
-            {
+            } else {
                 targetDistance.setText(R.string.waiting_for_location);
             }
-        }
-        else {
-
+        } else {
             targetInfo.setVisibility(View.GONE);
         }
         targetInfo.invalidate();
@@ -441,35 +499,49 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
             case FILE_SELECT_CODE:
                 if (resultCode == RESULT_OK) {
                     // Get the Uri of the selected file
-                    try {
-                        Uri uri = data.getData();
+                    Uri uri = data.getData();
+                    Log.d("BeagleSight", "File Uri: " + uri.toString());
 
-                        Log.d("BeagleSight", "File Uri: " + uri.toString());
-                        // Get the path
+                    // Get the path
+                    File fname = new File(getRealPathFromURI(uri));
+                    importXMLFile(fname);
+                }
+                recreate();
+                break;
+            case ADD_TARGET:
+                if (resultCode == RESULT_OK)
+                {
+                    final Target target = data.getParcelableExtra(TARGET_KEY);
+                    AsyncTask.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            tm.deleteTarget(target);
+                            tm.saveTarget(target);
 
-                        File fname = new File(getRealPathFromURI(uri));
-
-                        FileInputStream fis = new FileInputStream(fname);
-                        final List<Target> targets = XmlParser.parseTargetsXML(fis);
-                        AsyncTask.execute(new Runnable() {
-                            @Override
-                            public void run() {
-                                for (Target target : targets) {
-                                    tm.targetDao().insertAll(target);
-                                    for (LocationDescription locationDescription : target.getShootLocations()) {
-                                        tm.locationDescriptionDao().insertAll(locationDescription);
-                                    }
-                                }
-                            }
-                        });
-                    } catch (SAXException | ParserConfigurationException | IOException | NullPointerException e) {
-                        Toast.makeText(this, "Failed to load BowConfig: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                    }
+                            getTargets();
+                        }
+                    });
                 }
                 recreate();
                 break;
         }
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private void importXMLFile(File fname) {
+        try {
+            FileInputStream fis = new FileInputStream(fname);
+            final List<Target> targets = XmlParser.parseTargetsXML(fis);
+            AsyncTask.execute(new Runnable() {
+                @Override
+                public void run() {
+                    tm.saveTargets(targets);
+                    getTargets();
+                }
+            });
+        } catch (IOException | ParserConfigurationException | SAXException e) {
+            Toast.makeText(this, "Failed to import file", Toast.LENGTH_LONG).show();
+        }
     }
 
     private String getRealPathFromURI(Uri contentURI) {
@@ -505,9 +577,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
                     mProgressDialog.dismiss();
 
                     if (success) {
-                        Intent data = new Intent();
-                        data.setData(Uri.fromFile(file));
-                        onActivityResult(FILE_SELECT_CODE, RESULT_OK, data);
+                        importXMLFile(file);
                     } else {
                         Toast.makeText(getApplicationContext(),
                                 "Failed to download file",

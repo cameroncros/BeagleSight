@@ -7,9 +7,9 @@ public class MockBowConfig extends BowConfig {
     }
 
     @Override
-    public void initPositionCalculator()
+    public PositionCalculator getPositionCalculator()
     {
-        positionCalculator = new MockPositionCalculator();
+        return new MockPositionCalculator();
     }
 
     private class MockPositionCalculator extends PositionCalculator {

@@ -17,6 +17,8 @@ import com.cross.beaglesightlibs.BowConfig;
 import com.cross.beaglesightlibs.BowManager;
 import com.cross.beaglesightlibs.PositionPair;
 
+import java.util.UUID;
+
 import static com.cross.beaglesight.ShowSight.CONFIG_TAG;
 
 public class AddSight extends AppCompatActivity implements View.OnClickListener {
@@ -44,16 +46,14 @@ public class AddSight extends AppCompatActivity implements View.OnClickListener 
         String description = descriptionEntry.getText().toString();
 
         final BowConfig bowConfig = new BowConfig();
+
+        bowConfig.setId(UUID.randomUUID().toString());
         bowConfig.setName(name);
         bowConfig.setDescription(description);
         AsyncTask.execute(new Runnable() {
             @Override
             public void run() {
-                bowManager.bowConfigDao().insertAll(bowConfig);
-                for (PositionPair pair : bowConfig.getPositionArray())
-                {
-                    bowManager.positionPairDao().insertAll(pair);
-                }
+                bowManager.addBowConfig(bowConfig);
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {

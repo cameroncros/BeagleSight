@@ -65,11 +65,9 @@ public class BowListRecyclerViewAdapter extends RecyclerView.Adapter<BowListRecy
             public boolean onLongClick(View v) {
                 if (mListener != null) {
                     Boolean selected = mListener.onListFragmentLongPress(holder.mItem);
-                    //TODO: Fix selecting on long press:
-                    //CheckBox checkBox = holder.mView.findViewById(R.id.itemSelect);
-                    //checkBox.setSelected(selected);
-                    //checkBox.invalidate();
-                    //holder.mView.invalidate();
+                    CheckBox checkBox = v.findViewById(R.id.itemSelect);
+                    checkBox.setChecked(selected);
+                    checkBox.invalidate();
                 }
                 return true;
             }

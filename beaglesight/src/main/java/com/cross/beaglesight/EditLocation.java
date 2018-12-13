@@ -1,6 +1,7 @@
 package com.cross.beaglesight;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -16,17 +17,18 @@ import android.widget.TextView;
 
 import com.cross.beaglesightlibs.LocationDescription;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
 
 import java.text.DecimalFormat;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
-
-import static com.cross.beaglesight.EditTarget.LOCATION_KEY;
+import androidx.core.content.ContextCompat;
 
 public class EditLocation extends AppCompatActivity implements LocationListener {
+    private static final int TRACK_LOCATION = 1;
+    static final String LOCATION_KEY = "location";
     private LocationDescription locationDescription;
     private TextView longitude;
     private TextView latitude;
@@ -39,6 +41,8 @@ public class EditLocation extends AppCompatActivity implements LocationListener 
 
     private DecimalFormat gpsFormatter = new DecimalFormat("####0.000000");
     private DecimalFormat altFormatter = new DecimalFormat("####0.00");
+    private LocationManager locationManager;
+    private boolean isTracking = false;
 
 
     @Override
@@ -60,16 +64,10 @@ public class EditLocation extends AppCompatActivity implements LocationListener 
 
         description = findViewById(R.id.description);
 
-        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                    && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                String[] permissions = new String[]{Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.ACCESS_COARSE_LOCATION};
-                ActivityCompat.requestPermissions(this, permissions, 1);
-                return;
-            }
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
+            String[] permissions = new String[]{Manifest.permission.ACCESS_FINE_LOCATION};
+            ActivityCompat.requestPermissions(this, permissions, TRACK_LOCATION);
         }
 
         final FloatingActionButton fab = findViewById(R.id.fab);
@@ -90,13 +88,10 @@ public class EditLocation extends AppCompatActivity implements LocationListener 
             @Override
             public void onClick(View view) {
                 updateLocation = !updateLocation;
-                if (updateLocation)
-                {
+                if (updateLocation) {
                     lock_location.setText(R.string.lock_location);
                     lock_location.invalidate();
-                }
-                else
-                {
+                } else {
                     lock_location.setText(R.string.acquire_location);
                     lock_location.invalidate();
                 }
@@ -104,6 +99,60 @@ public class EditLocation extends AppCompatActivity implements LocationListener 
         });
 
         fillViews(locationDescription);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        for (int grantResult : grantResults) {
+            if (grantResult != PackageManager.PERMISSION_GRANTED) {
+                return;
+            }
+        }
+
+        switch (requestCode) {
+            case TRACK_LOCATION:
+                trackLocation();
+                break;
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                String[] permissions = new String[]{
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                };
+                ActivityCompat.requestPermissions(this, permissions, TRACK_LOCATION);
+            }
+        } else {
+            trackLocation();
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private void trackLocation() {
+        synchronized (this) {
+            if (!isTracking) {
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
+                isTracking = true;
+            }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    @Override
+    public void onPause() {
+        super.onPause();
+        synchronized (this) {
+            if (isTracking) {
+                locationManager.removeUpdates(this);
+                isTracking = false;
+            }
+        }
     }
 
     @Override

@@ -1,5 +1,8 @@
 package com.cross.beaglesightlibs;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import java.util.List;
 
 import androidx.annotation.NonNull;
@@ -21,7 +24,7 @@ import static androidx.room.OnConflictStrategy.REPLACE;
         childColumns = "bowId",
         onDelete = CASCADE),
         indices = @Index("bowId"))
-public class PositionPair {
+public class PositionPair implements Parcelable{
     @PrimaryKey
     @NonNull
     private String id;
@@ -73,16 +76,47 @@ public class PositionPair {
         this.position = position;
     }
 
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel parcel, int i) {
+        parcel.writeString(id);
+        parcel.writeString(bowId);
+        parcel.writeFloat(position);
+        parcel.writeFloat(distance);
+    }
+
+    public PositionPair(Parcel in) {
+        id = in.readString();
+        bowId = in.readString();
+        position = in.readFloat();
+        distance = in.readFloat();
+    }
+
+    public static final Parcelable.Creator<BowConfig> CREATOR = new Parcelable.Creator<BowConfig>() {
+        @Override
+        public BowConfig createFromParcel(Parcel in) {
+            return new BowConfig(in);
+        }
+
+        @Override
+        public BowConfig[] newArray(int size) {
+            return new BowConfig[size];
+        }
+    };
+
+
+
     @Dao
     public interface PositionPairDao {
-        @Query("SELECT * FROM positionpair")
-        List<PositionPair> getAll();
-
         @Query("SELECT * FROM positionpair WHERE bowId IN (:bowId)")
         List<PositionPair> getPositionForBow(String bowId);
 
         @Insert(onConflict = REPLACE)
-        void insertAll(PositionPair... positionPairs);
+        void insert(PositionPair... positionPairs);
 
         @Delete
         void delete(PositionPair positionPair);

@@ -36,9 +36,11 @@
     <string name="acquire_location">Acquire Location</string>
     <string name="plus_minus">± %s</string>
     <string name="latlong">LatLong:</string>
-
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="action_update">Update Public Targets</string>
     <string name="action_export">Export</string>
+    <string name="download_message">Downloading public targets…</string>
+    <string name="targets_url">https://raw.githubusercontent.com/cameroncros/BeagleSight/master/default_configs/targets.xml</string>
+    <string name="title_activity_target_ar">TargetAR</string>
+    <string name="dummy_button">Dummy Button</string>
+    <string name="dummy_content">DUMMY\nCONTENT</string>
 </resources>

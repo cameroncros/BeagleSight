@@ -1,6 +1,7 @@
 package com.cross.beaglesightlibs;
 
 import android.location.Location;
+import android.location.LocationManager;
 import android.os.Build;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -241,16 +242,28 @@ public class LocationDescription implements Parcelable {
                 latitude, longitude, altitude);
     }
 
+    public Location getLocation() {
+        Location location = new Location(LocationManager.GPS_PROVIDER);
+        location.setLatitude(latitude);
+        location.setLongitude(longitude);
+        location.setAltitude(altitude);
+        location.setAccuracy(latlng_accuracy);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            location.setVerticalAccuracyMeters(altitude_accuracy);
+        }
+        return location;
+    }
+
     @Dao
     public interface LocationDescriptionDao {
         @Query("SELECT * FROM locationdescription")
         List<LocationDescription> getAll();
 
         @Query("SELECT * FROM locationdescription WHERE targetId IN (:targetId)")
-        List<LocationDescription> getLocationsForTarget(String targetId);
+        List<LocationDescription> getLocationsForTargetId(String targetId);
 
         @Insert(onConflict = REPLACE)
-        void insertAll(LocationDescription... locationDescriptions);
+        void insert(LocationDescription locationDescriptions);
 
         @Delete
         void delete(LocationDescription locationDescription);

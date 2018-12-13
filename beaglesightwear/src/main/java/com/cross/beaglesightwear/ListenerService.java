@@ -40,10 +40,6 @@ public class ListenerService extends WearableListenerService {
                 {
                     bowManager.bowConfigDao().delete(bowConfig);
                 }
-                for (PositionPair positionPair : bowManager.positionPairDao().getAll())
-                {
-                    bowManager.positionPairDao().delete(positionPair);
-                }
                 // Add back bow configs
                 DataItem item = event.getDataItem();
                 if (item.getUri().getPath().compareTo(BOWCONFIGS) == 0) {
@@ -54,11 +50,7 @@ public class ListenerService extends WearableListenerService {
                         ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
                         try {
                             BowConfig bc = XmlParser.parseSingleBowConfigXML(bais);
-                            bowManager.bowConfigDao().insertAll(bc);
-                            for (PositionPair positionPair : bc.getPositionArray())
-                            {
-                                bowManager.positionPairDao().insertAll(positionPair);
-                            }
+                            bowManager.addBowConfig(bc);
                         } catch (IOException | ParserConfigurationException | SAXException e) {
                             e.printStackTrace();
                         }

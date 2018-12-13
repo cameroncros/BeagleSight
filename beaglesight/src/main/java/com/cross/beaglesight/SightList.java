@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -36,6 +37,7 @@ import java.util.List;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
@@ -48,13 +50,15 @@ import static com.cross.beaglesight.ShowSight.CONFIG_TAG;
 public class SightList extends AppCompatActivity implements BowListRecyclerViewAdapter.OnListFragmentInteractionListener {
     private Intent addIntent;
     private List<BowConfig> configList = new ArrayList<>();
-    private ArrayList<BowConfig> selectedBowConfigs;
+    ArrayList<BowConfig> selectedBowConfigs;
     private FloatingActionButton fab;
 
     private static final int FILE_SELECT_CODE = 0;
+    private static final int IMPORT_FILES = 1;
     private static final int ADD_BOW = 2;
     private BowListRecyclerViewAdapter adapter;
     private BowManager bm;
+    private boolean actionModeStarted = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -109,23 +113,35 @@ public class SightList extends AppCompatActivity implements BowListRecyclerViewA
                 startActivityForResult(addIntent, ADD_BOW);
                 return true;
             case R.id.action_import:
-                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                    String[] permissions = new String[]{
-                            Manifest.permission.READ_EXTERNAL_STORAGE
-                    };
-                    ActivityCompat.requestPermissions(this, permissions, 1);
-                    return true;
-                }
-                importConfig();
+                String[] permissions = new String[]{
+                        Manifest.permission.READ_EXTERNAL_STORAGE
+                };
+                ActivityCompat.requestPermissions(this, permissions, IMPORT_FILES);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
 
+    @SuppressLint("MissingPermission")
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        for (int grantResult : grantResults) {
+            if (grantResult != PackageManager.PERMISSION_GRANTED) {
+                return;
+            }
+        }
+
+        switch (requestCode) {
+            case IMPORT_FILES:
+                importConfig();
+                break;
+        }
+    }
+
     @Override
     public boolean onListFragmentInteraction(BowConfig bowConfig) {
-        if (selectedBowConfigs != null)
+        if (actionModeStarted)
         {
             if (selectedBowConfigs.contains(bowConfig))
             {
@@ -140,7 +156,7 @@ public class SightList extends AppCompatActivity implements BowListRecyclerViewA
         }
         else {
             Intent intent = new Intent(this, ShowSight.class);
-            intent.putExtra(CONFIG_TAG, bowConfig.getId());
+            intent.putExtra(CONFIG_TAG, bowConfig);
             startActivity(intent);
             return false;
         }
@@ -149,17 +165,18 @@ public class SightList extends AppCompatActivity implements BowListRecyclerViewA
     @SuppressLint("RestrictedApi")
     @Override
     public boolean onListFragmentLongPress(BowConfig bowConfig) {
-        if (selectedBowConfigs == null) {
+        if (!actionModeStarted) {
             selectedBowConfigs = new ArrayList<>();
-            //TODO: Fix selecting on long press: selectedBowConfigs.add(bowConfig);
+            selectedBowConfigs.add(bowConfig);
 
             startActionMode(selectedActionMode);
 
             fab.setVisibility(View.GONE);
             fab.invalidate();
             return true;
+        } else {
+            return onListFragmentInteraction(bowConfig);
         }
-        return false;
     }
 
     private final ActionMode.Callback selectedActionMode = new ActionMode.Callback() {
@@ -170,6 +187,8 @@ public class SightList extends AppCompatActivity implements BowListRecyclerViewA
 
             adapter.enableMultiSelectMode(true);
             adapter.notifyDataSetChanged();
+
+            actionModeStarted = true;
             return true;
         }
 
@@ -179,7 +198,7 @@ public class SightList extends AppCompatActivity implements BowListRecyclerViewA
         }
 
         @Override
-        public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+        public boolean onActionItemClicked(final ActionMode mode, MenuItem item) {
             final BowManager bm = BowManager.getInstance(getBaseContext());
             switch (item.getItemId()) {
                 case R.id.action_delete:
@@ -188,9 +207,16 @@ public class SightList extends AppCompatActivity implements BowListRecyclerViewA
                         public void run() {
                             for (BowConfig config : selectedBowConfigs)
                             {
-                                bm.bowConfigDao().delete(config);
+                                bm.deleteBowConfig(config);
                             }
-                            updateBows();
+                            selectedBowConfigs = null;
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    mode.finish();
+                                    updateBows();
+                                }
+                            });
                         }
                     });
                     break;
@@ -219,10 +245,10 @@ public class SightList extends AppCompatActivity implements BowListRecyclerViewA
                     }
                     shareIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris);
                     startActivity(Intent.createChooser(shareIntent, "Export Configs"));
+                    selectedBowConfigs = null;
+                    mode.finish();
                     break;
             }
-            selectedBowConfigs = null;
-            mode.finish();
             return true;
         }
 
@@ -234,7 +260,7 @@ public class SightList extends AppCompatActivity implements BowListRecyclerViewA
             fab.setVisibility(View.VISIBLE);
             fab.invalidate();
 
-            selectedBowConfigs = null;
+            actionModeStarted = false;
         }
     };
 
@@ -243,7 +269,7 @@ public class SightList extends AppCompatActivity implements BowListRecyclerViewA
             @Override
             public void run() {
                 configList.clear();
-                configList.addAll(bm.bowConfigDao().getAll());
+                configList.addAll(bm.getAllBowConfigsWithPositions());
 
                 runOnUiThread(new Runnable() {
                     @Override
@@ -274,7 +300,7 @@ public class SightList extends AppCompatActivity implements BowListRecyclerViewA
 
                                 FileInputStream fis = new FileInputStream(fname);
                                 BowConfig bowConfig = XmlParser.parseSingleBowConfigXML(fis);
-                                bm.bowConfigDao().insertAll(bowConfig);
+                                bm.addBowConfig(bowConfig);
                                 updateBows();
                             } catch (SAXException | ParserConfigurationException | IOException | NullPointerException ignored) {
                             }

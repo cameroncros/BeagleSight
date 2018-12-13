@@ -1,6 +1,5 @@
 package com.cross.beaglesightlibs;
 
-import android.util.Log;
 import android.util.Xml;
 
 import com.cross.beaglesightlibs.exceptions.InvalidNumberFormatException;

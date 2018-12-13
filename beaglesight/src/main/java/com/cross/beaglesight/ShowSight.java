@@ -24,9 +24,6 @@ import com.cross.beaglesightlibs.BowConfig;
 import com.cross.beaglesightlibs.BowManager;
 import com.cross.beaglesightlibs.PositionCalculator;
 import com.cross.beaglesightlibs.PositionPair;
-import com.cross.beaglesightlibs.exceptions.InvalidBowConfigIdException;
-
-import java.util.List;
 
 public class ShowSight extends AppCompatActivity implements SightGraph.SightGraphCallback {
     static final String CONFIG_TAG = "config";
@@ -36,11 +33,11 @@ public class ShowSight extends AppCompatActivity implements SightGraph.SightGrap
     private EditText distance;
     private EditText position;
 
-    private String id;
     private BowConfig bowConfig;
     private PositionCalculator positionCalculator;
     private ActionMode actionMode;
     private PositionPair selectedPair;
+    private BowManager bm;
 
     private final TextWatcher distanceListener = new TextWatcher() {
         @Override
@@ -74,17 +71,17 @@ public class ShowSight extends AppCompatActivity implements SightGraph.SightGrap
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        bm = BowManager.getInstance(ShowSight.this);
+
         Intent intent = getIntent();
-        id = (String) intent.getSerializableExtra(CONFIG_TAG);
-        getBowConfig();
+        updateBowConfig((BowConfig)intent.getParcelableExtra(CONFIG_TAG));
 
-        final Intent addDistance = new Intent(this, AddDistance.class);
-        addDistance.putExtra(CONFIG_TAG, id);
-
-        FloatingActionButton fab = findViewById(R.id.fabShowSight);
+        FloatingActionButton fab = findViewById(R.id.fabAddPosition);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                Intent addDistance = new Intent(ShowSight.this, AddDistance.class);
+                addDistance.putExtra(CONFIG_TAG, bowConfig);
                 startActivityForResult(addDistance, ADD_DISTANCE);
             }
         });
@@ -95,35 +92,19 @@ public class ShowSight extends AppCompatActivity implements SightGraph.SightGrap
         distance.addTextChangedListener(distanceListener);
     }
 
-    private void getBowConfig() {
-        AsyncTask.execute(new Runnable() {
-            @Override
-            public void run() {
-                BowManager bm = BowManager.getInstance(getApplicationContext());
-                bowConfig = bm.bowConfigDao().get(id);
-                if (bowConfig != null) {
-                    List<PositionPair> pairs = bm.positionPairDao().getPositionForBow(id);
-                    bowConfig.setPositionArray(pairs);
-                }
+    private void updateBowConfig(BowConfig bowConfig) {
+        if (bowConfig == null)
+        {
+            Toast.makeText(ShowSight.this, "Failed to get BowConfig", Toast.LENGTH_LONG).show();
+            finish();
+        }
+        this.bowConfig = bowConfig;
+        positionCalculator = bowConfig.getPositionCalculator();
 
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (bowConfig == null)
-                        {
-                            Toast.makeText(ShowSight.this, "Failed to find Bow Config", Toast.LENGTH_LONG).show();
-                            finish();
-                        }
-                        positionCalculator = bowConfig.getPositionCalculator();
-
-                        sightGraph = findViewById(R.id.sightGraph);
-                        sightGraph.setBowConfig(bowConfig);
-                        sightGraph.setUpdateDistanceCallback(ShowSight.this);
-                        sightGraph.invalidate();
-                    }
-                });
-            }
-        });
+        sightGraph = findViewById(R.id.sightGraph);
+        sightGraph.setBowConfig(bowConfig);
+        sightGraph.setUpdateDistanceCallback(ShowSight.this);
+        sightGraph.invalidate();
     }
 
     @Override
@@ -131,7 +112,17 @@ public class ShowSight extends AppCompatActivity implements SightGraph.SightGrap
         switch (requestCode) {
             case ADD_DISTANCE:
                 if (resultCode == RESULT_OK) {
-                    getBowConfig();
+                    bowConfig = data.getParcelableExtra(CONFIG_TAG);
+                    positionCalculator = bowConfig.getPositionCalculator();
+
+                    final BowConfig temp = bowConfig;
+                    AsyncTask.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            bm.addBowConfig(temp);
+                            updateBowConfig(temp);
+                        }
+                    });
                 }
                 break;
         }
