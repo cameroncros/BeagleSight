@@ -20,6 +20,8 @@ import com.cross.beaglesightlibs.PositionCalculator;
 import com.cross.beaglesightlibs.PositionPair;
 import com.cross.beaglesightlibs.exceptions.InvalidNumberFormatException;
 
+import java.util.UUID;
+
 import static com.cross.beaglesight.ShowSight.CONFIG_TAG;
 
 public class AddDistance extends AppCompatActivity {
@@ -161,6 +163,7 @@ public class AddDistance extends AppCompatActivity {
                 Float distance = Float.parseFloat(simpleDistance.getText().toString());
                 Float pinSetting = Float.parseFloat(simplePin.getText().toString());
                 final PositionPair pair = new PositionPair(distance, pinSetting);
+                pair.setId(UUID.randomUUID().toString());
                 pair.setBowId(bowConfig.getId());
                 bowConfig.getPositionArray().add(pair);
                 Intent intent = new Intent();

@@ -25,6 +25,7 @@ import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static com.cross.beaglesight.ShowSight.CONFIG_TAG;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(AndroidJUnit4.class)
@@ -79,14 +80,7 @@ public class TestAddDistance {
         // Save, because why not
         onView(withId(R.id.addDistance)).perform(click());
 
-        Instrumentation.ActivityResult result = activityTestRule.getActivityResult();
-        assertEquals(RESULT_OK, result.getResultCode());
-        assertTrue(result.getResultData().hasExtra(CONFIG_TAG));
-        BowConfig resultBow = result.getResultData().getParcelableExtra(CONFIG_TAG);
-        assertEquals(bowConfig.getPositionArray().size() + 1, resultBow.getPositionArray().size());
-        assertEquals(15, resultBow.getPositionArray().get(3).getDistance(), 0.1);
-        assertEquals(15, resultBow.getPositionArray().get(3).getPosition(), 0.1);
-        assertEquals(bowConfig.getId(), resultBow.getPositionArray().get(3).getBowId());
+        validateResult();
     }
 
     @Test
@@ -99,6 +93,10 @@ public class TestAddDistance {
 
         onView(withId(R.id.addDistance)).perform(click());
 
+        validateResult();
+    }
+
+    private void validateResult() {
         Instrumentation.ActivityResult result = activityTestRule.getActivityResult();
         assertEquals(RESULT_OK, result.getResultCode());
         assertTrue(result.getResultData().hasExtra(CONFIG_TAG));
@@ -107,5 +105,6 @@ public class TestAddDistance {
         assertEquals(15, resultBow.getPositionArray().get(3).getDistance(), 0.1);
         assertEquals(15, resultBow.getPositionArray().get(3).getPosition(), 0.1);
         assertEquals(bowConfig.getId(), resultBow.getPositionArray().get(3).getBowId());
+        assertNotNull(resultBow.getPositionArray().get(3).getId());
     }
 }
