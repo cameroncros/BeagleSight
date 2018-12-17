@@ -13,23 +13,20 @@ class LongPressCustomViewListener {
     private MotionEvent firstEvent = null;
     private boolean longPressed;
 
-    LongPressCustomViewListener(LongPressCustomView view, float touchRadius)
-    {
+    LongPressCustomViewListener(LongPressCustomView view, float touchRadius) {
         this.view = view;
         this.touchRadius = touchRadius;
     }
 
     private Thread timer;
 
-    private class LongPressTimer extends Thread
-    {
+    private class LongPressTimer extends Thread {
         public void run() {
             try {
                 longPressed = false;
                 sleep(1000);
                 longPressed = true;
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            } catch (InterruptedException ignored) {
             }
         }
     }
@@ -68,8 +65,7 @@ class LongPressCustomViewListener {
                 timer.interrupt();
                 break;
         }
-        if (longPressed)
-        {
+        if (longPressed) {
             longPressed = false;
             view.onLongTouchEvent(lastEvent);
         }
