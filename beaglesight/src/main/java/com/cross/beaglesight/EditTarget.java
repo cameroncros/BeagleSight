@@ -1,34 +1,22 @@
 package com.cross.beaglesight;
 
 import android.content.Intent;
-import android.location.Location;
-import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Parcelable;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.Toast;
 
 import com.cross.beaglesight.fragments.LocationFragment;
 import com.cross.beaglesightlibs.LocationDescription;
 import com.cross.beaglesightlibs.Target;
-import com.cross.beaglesightlibs.TargetManager;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
@@ -68,7 +56,7 @@ public class EditTarget extends AppCompatActivity implements LocationFragment.On
         }
         name = findViewById(R.id.textName);
 
-        final FloatingActionButton fab = findViewById(R.id.fab);
+        final FloatingActionButton fab = findViewById(R.id.fabAddSight);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {

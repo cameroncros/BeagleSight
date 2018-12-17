@@ -30,8 +30,6 @@ public class BowConfig implements Parcelable {
 
     @Ignore
     private List<PositionPair> positionArray = new ArrayList<>();
-    @Ignore
-    private PositionCalculator positionCalculator;
 
     public BowConfig()
     {
@@ -72,9 +70,8 @@ public class BowConfig implements Parcelable {
     }
 
     public PositionCalculator getPositionCalculator() {
-        if (positionCalculator == null) {
-            positionCalculator = new LineOfBestFitCalculator();
-        }
+        PositionCalculator positionCalculator = new LineOfBestFitCalculator();
+        positionCalculator.setPositions(positionArray);
         return positionCalculator;
     }
 
@@ -96,7 +93,7 @@ public class BowConfig implements Parcelable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, description, positionArray, positionCalculator);
+        return Objects.hash(id, name, description, positionArray);
     }
 
     @Override

@@ -109,4 +109,19 @@ public class TestSightList {
 
         intended(allOf(hasComponent(ShowSight.class.getName()), hasExtra(CONFIG_TAG, firstConfig)));
     }
+
+    @Test
+    public void addBow() {
+        sightList = activityTestRule.getActivity();
+        Intent intent = new Intent();
+        BowConfig bc = TestUtils.TestBowConfig();
+        intent.putExtra(CONFIG_TAG, bc);
+        Instrumentation.ActivityResult intentResult = new Instrumentation.ActivityResult(Activity.RESULT_OK, intent);
+
+        intending(anyIntent()).respondWith(intentResult);
+
+        onView(withIndex(withId(R.id.fabAddSight), 0)).perform(click());
+
+        intended(hasComponent(ShowSight.class.getName()));
+    }
 }

@@ -35,7 +35,6 @@ public class AddDistance extends AppCompatActivity {
     private EditText pinSetting2 = null;
     private EditText offset2 = null;
 
-    private BowManager bm = null;
     private BowConfig bowConfig = null;
 
 
@@ -57,9 +56,6 @@ public class AddDistance extends AppCompatActivity {
     }
 
     private void calculateResultPin() {
-        if (!simpleDistance.getText().toString().equals("")) {
-            return;
-        }
         try {
             float y1 = Float.parseFloat(pinSetting1.getText().toString());
             float y2 = Float.parseFloat(pinSetting2.getText().toString());
@@ -71,10 +67,15 @@ public class AddDistance extends AppCompatActivity {
             // y(0) = c
             // c = y1 - (y1-y2)/(x1-x2) * x1
             float c = y1 - ((y1 - y2) / (x1 - x2) * x1);
+            if (c == Float.NaN)
+            {
+                return;
+            }
             String cstring = PositionCalculator.getDisplayValue(c, 2);
 
             if (simplePin.getText().toString().equals("")) {
                 simplePin.setText(cstring);
+                simplePin.invalidate();
             }
         } catch (NumberFormatException nfe) {
             // Do nothing
@@ -184,7 +185,7 @@ public class AddDistance extends AppCompatActivity {
 
         Intent intent = getIntent();
         bowConfig = intent.getParcelableExtra(CONFIG_TAG);
-        bm = BowManager.getInstance(this);
+        BowManager bm = BowManager.getInstance(this);
 
         add = findViewById(R.id.addDistance);
         add.setOnClickListener(addPinSetting);

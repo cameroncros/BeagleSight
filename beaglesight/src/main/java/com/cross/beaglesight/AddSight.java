@@ -58,7 +58,7 @@ public class AddSight extends AppCompatActivity implements View.OnClickListener 
                     @Override
                     public void run() {
                         Intent intent = new Intent();
-                        intent.putExtra(CONFIG_TAG, bowConfig.getId());
+                        intent.putExtra(CONFIG_TAG, bowConfig);
                         setResult(RESULT_OK, intent);
                         finish();
                     }

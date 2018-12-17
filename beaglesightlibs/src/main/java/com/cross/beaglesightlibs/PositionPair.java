@@ -96,15 +96,15 @@ public class PositionPair implements Parcelable{
         distance = in.readFloat();
     }
 
-    public static final Parcelable.Creator<BowConfig> CREATOR = new Parcelable.Creator<BowConfig>() {
+    public static final Parcelable.Creator<PositionPair> CREATOR = new Parcelable.Creator<PositionPair>() {
         @Override
-        public BowConfig createFromParcel(Parcel in) {
-            return new BowConfig(in);
+        public PositionPair createFromParcel(Parcel in) {
+            return new PositionPair(in);
         }
 
         @Override
-        public BowConfig[] newArray(int size) {
-            return new BowConfig[size];
+        public PositionPair[] newArray(int size) {
+            return new PositionPair[size];
         }
     };
 

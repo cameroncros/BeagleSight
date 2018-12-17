@@ -70,7 +70,7 @@ public class EditLocation extends AppCompatActivity implements LocationListener 
             ActivityCompat.requestPermissions(this, permissions, TRACK_LOCATION);
         }
 
-        final FloatingActionButton fab = findViewById(R.id.fab);
+        final FloatingActionButton fab = findViewById(R.id.fabAddSight);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {

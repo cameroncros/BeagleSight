@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.location.LocationManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -17,13 +16,11 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Toast;
 
 import com.cross.beaglesight.fragments.BowListRecyclerViewAdapter;
 import com.cross.beaglesightlibs.BowConfig;
 import com.cross.beaglesightlibs.BowManager;
 import com.cross.beaglesightlibs.XmlParser;
-import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import org.xml.sax.SAXException;
@@ -71,7 +68,7 @@ public class SightList extends AppCompatActivity implements BowListRecyclerViewA
 
         addIntent = new Intent(this, AddSight.class);
 
-        fab = findViewById(R.id.fab);
+        fab = findViewById(R.id.fabAddSight);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -311,9 +308,9 @@ public class SightList extends AppCompatActivity implements BowListRecyclerViewA
                 break;
             case ADD_BOW:
                 if(resultCode == RESULT_OK) {
-                    String bowConfigId = data.getStringExtra(CONFIG_TAG);
+                    BowConfig bowConfig = data.getParcelableExtra(CONFIG_TAG);
                     Intent intent = new Intent(this, ShowSight.class);
-                    intent.putExtra(CONFIG_TAG, bowConfigId);
+                    intent.putExtra(CONFIG_TAG, bowConfig);
                     startActivity(intent);
                 }
                 break;
