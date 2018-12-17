@@ -361,6 +361,12 @@ public class SightGraph extends View implements LongPressCustomView {
         invalidate();
     }
 
+    public void nullSelected()
+    {
+        this.selectedPairPixel = null;
+        invalidate();
+    }
+
     public void setUpdateDistanceCallback(SightGraphCallback updateCallback)
     {
         this.updateCallback = updateCallback;

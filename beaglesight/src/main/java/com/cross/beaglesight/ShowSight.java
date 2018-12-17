@@ -74,7 +74,11 @@ public class ShowSight extends AppCompatActivity implements SightGraph.SightGrap
         bm = BowManager.getInstance(ShowSight.this);
 
         Intent intent = getIntent();
-        updateBowConfig((BowConfig)intent.getParcelableExtra(CONFIG_TAG));
+        if (bowConfig == null) {
+            updateBowConfig((BowConfig) intent.getParcelableExtra(CONFIG_TAG));
+        } else {
+            updateBowConfig(bowConfig);
+        }
 
         FloatingActionButton fab = findViewById(R.id.fabAddPosition);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -104,6 +108,7 @@ public class ShowSight extends AppCompatActivity implements SightGraph.SightGrap
         sightGraph = findViewById(R.id.sightGraph);
         sightGraph.setBowConfig(bowConfig);
         sightGraph.setUpdateDistanceCallback(ShowSight.this);
+        sightGraph.nullSelected();
         sightGraph.invalidate();
     }
 
@@ -165,17 +170,24 @@ public class ShowSight extends AppCompatActivity implements SightGraph.SightGrap
         }
 
         @Override
-        public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+        public boolean onActionItemClicked(final ActionMode mode, MenuItem item) {
             switch (item.getItemId()) {
                 case R.id.delete_position:
                     AsyncTask.execute(new Runnable() {
                         @Override
                         public void run() {
-                            BowManager.getInstance(getApplicationContext()).positionPairDao().delete(selectedPair);
+                            BowManager bm = BowManager.getInstance(getApplicationContext());
+                            bm.positionPairDao().delete(selectedPair);
+                            bowConfig = bm.getBowConfig(bowConfig.getId());
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    mode.finish();
+                                    updateBowConfig(bowConfig);
+                                }
+                            });
                         }
                     });
-                    mode.finish();
-                    recreate();
                     break;
             }
             return true;
