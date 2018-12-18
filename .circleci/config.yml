@@ -62,6 +62,8 @@ jobs:
       - store_artifacts:
           path: beaglesightlibs/build/reports
           destination: reports/beaglesightlibs
+      - store_test_results:
+          path: beaglesightlibs/build/test_results/
       - store_artifacts:
           path: beaglesightwear/build/reports
           destination: reports/beaglesightwear
