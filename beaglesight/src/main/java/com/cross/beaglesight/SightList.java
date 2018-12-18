@@ -50,7 +50,7 @@ public class SightList extends AppCompatActivity implements BowListRecyclerViewA
     ArrayList<BowConfig> selectedBowConfigs;
     private FloatingActionButton fab;
 
-    private static final int FILE_SELECT_CODE = 0;
+    static final int FILE_SELECT_CODE = 0;
     private static final int IMPORT_FILES = 1;
     private static final int ADD_BOW = 2;
     private BowListRecyclerViewAdapter adapter;
@@ -123,9 +123,11 @@ public class SightList extends AppCompatActivity implements BowListRecyclerViewA
     @SuppressLint("MissingPermission")
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        for (int grantResult : grantResults) {
-            if (grantResult != PackageManager.PERMISSION_GRANTED) {
-                return;
+        if (grantResults != null) {
+            for (int grantResult : grantResults) {
+                if (grantResult != PackageManager.PERMISSION_GRANTED) {
+                    return;
+                }
             }
         }
 

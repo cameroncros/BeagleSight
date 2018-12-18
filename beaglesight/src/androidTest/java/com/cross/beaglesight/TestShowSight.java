@@ -46,7 +46,7 @@ public class TestShowSight {
     }
 
     @Test
-    public void addPosition() {
+    public void addBowConfig() {
         Intent intent = new Intent();
         BowConfig returnConfig = TestUtils.TestBowConfig();
         intent.putExtra(CONFIG_TAG, returnConfig);

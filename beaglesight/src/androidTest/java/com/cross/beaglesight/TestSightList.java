@@ -3,9 +3,12 @@ package com.cross.beaglesight;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
 
 import com.cross.beaglesightlibs.BowConfig;
 import com.cross.beaglesightlibs.BowManager;
+import com.cross.beaglesightlibs.XmlParser;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -14,12 +17,18 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.URI;
 import java.util.List;
 
 import androidx.test.espresso.intent.rule.IntentsTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import static android.app.Activity.RESULT_OK;
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.action.ViewActions.longClick;
@@ -30,8 +39,11 @@ import static androidx.test.espresso.intent.matcher.IntentMatchers.hasComponent;
 import static androidx.test.espresso.intent.matcher.IntentMatchers.hasExtra;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static com.cross.beaglesight.ShowSight.CONFIG_TAG;
+import static com.cross.beaglesight.SightList.FILE_SELECT_CODE;
 import static com.cross.beaglesight.TestUtils.withIndex;
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.isOneOf;
+import static org.junit.Assert.assertEquals;
 
 @RunWith(AndroidJUnit4.class)
 public class TestSightList {
@@ -98,7 +110,7 @@ public class TestSightList {
         Intent intent = new Intent();
         BowConfig bc = TestUtils.TestBowConfig();
         intent.putExtra(CONFIG_TAG, bc);
-        Instrumentation.ActivityResult intentResult = new Instrumentation.ActivityResult(Activity.RESULT_OK, intent);
+        Instrumentation.ActivityResult intentResult = new Instrumentation.ActivityResult(RESULT_OK, intent);
 
         intending(anyIntent()).respondWith(intentResult);
 
@@ -111,12 +123,50 @@ public class TestSightList {
     }
 
     @Test
+    public void exportBow()
+    {
+        sightList = activityTestRule.getActivity();
+        Intent intent = new Intent();
+        BowConfig bc = TestUtils.TestBowConfig();
+        intent.putExtra(CONFIG_TAG, bc);
+        Instrumentation.ActivityResult dummyIntent = new Instrumentation.ActivityResult(RESULT_OK, intent);
+
+        intending(anyIntent()).respondWith(dummyIntent);
+
+        List<BowConfig> configs = bm.getAllBowConfigsWithPositions();
+        BowConfig firstConfig = configs.get(0);
+
+        onView(withIndex(withId(R.id.itemName), 0)).perform(longClick());
+        onView(withId(R.id.action_export)).perform(click());
+        // To hard to validate the export intent, just forget about it.
+    }
+
+    @Test
+    public void importBows() throws IOException, InterruptedException {
+        sightList = activityTestRule.getActivity();
+
+
+        Intent intent = new Intent();
+        BowConfig bc = TestUtils.TestBowConfig();
+        File file = File.createTempFile("test", "data");
+        FileOutputStream fos = new FileOutputStream(file);
+        XmlParser.serialiseSingleBowConfig(fos, bc);
+        intent.setData(Uri.fromFile(file));
+
+        sightList.onActivityResult(FILE_SELECT_CODE, RESULT_OK, intent);
+        Thread.sleep(1000); // Sleep to allow async task to complete.
+
+        BowConfig resultBowConfig = bm.getBowConfig(bc.getId());
+        assertEquals(bc, resultBowConfig);
+    }
+
+    @Test
     public void addBow() {
         sightList = activityTestRule.getActivity();
         Intent intent = new Intent();
         BowConfig bc = TestUtils.TestBowConfig();
         intent.putExtra(CONFIG_TAG, bc);
-        Instrumentation.ActivityResult intentResult = new Instrumentation.ActivityResult(Activity.RESULT_OK, intent);
+        Instrumentation.ActivityResult intentResult = new Instrumentation.ActivityResult(RESULT_OK, intent);
 
         intending(anyIntent()).respondWith(intentResult);
 
