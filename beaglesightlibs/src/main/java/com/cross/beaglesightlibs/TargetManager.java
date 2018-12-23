@@ -80,5 +80,16 @@ public abstract class TargetManager extends RoomDatabase {
             }
         }
     }
+
+    public Target getTarget(String id)
+    {
+        Target target = targetDao.getTarget(id);
+        if (target == null)
+        {
+            return null;
+        }
+        target.setShootLocations(locationDescriptionDao().getLocationsForTargetId(id));
+        return target;
+    }
 }
 

@@ -183,9 +183,11 @@ public class XmlParser {
         serializer.text(locationDescription.getTargetId());
         serializer.endTag(null, XML_TAGS.TARGET_ID);
 
-        serializer.startTag(null, XML_TAGS.DESCRIPTION);
-        serializer.text(locationDescription.getDescription());
-        serializer.endTag(null, XML_TAGS.DESCRIPTION);
+        if (locationDescription.getDescription() != null) {
+            serializer.startTag(null, XML_TAGS.DESCRIPTION);
+            serializer.text(locationDescription.getDescription());
+            serializer.endTag(null, XML_TAGS.DESCRIPTION);
+        }
 
         serializer.startTag(null, XML_TAGS.LATITUDE);
         serializer.text(Double.toString(locationDescription.getLatitude()));
@@ -199,13 +201,17 @@ public class XmlParser {
         serializer.text(Double.toString(locationDescription.getAltitude()));
         serializer.endTag(null, XML_TAGS.ALTITUDE);
 
-        serializer.startTag(null, XML_TAGS.LAT_LNG_ACCURACY);
-        serializer.text(Float.toString(locationDescription.getLatlng_accuracy()));
-        serializer.endTag(null, XML_TAGS.LAT_LNG_ACCURACY);
+        if (locationDescription.getLatlng_accuracy() != Float.NaN) {
+            serializer.startTag(null, XML_TAGS.LAT_LNG_ACCURACY);
+            serializer.text(Float.toString(locationDescription.getLatlng_accuracy()));
+            serializer.endTag(null, XML_TAGS.LAT_LNG_ACCURACY);
+        }
 
-        serializer.startTag(null, XML_TAGS.ALTITUDE_ACCURACY);
-        serializer.text(Float.toString(locationDescription.getAltitude_accuracy()));
-        serializer.endTag(null, XML_TAGS.ALTITUDE_ACCURACY);
+        if (locationDescription.getAltitude_accuracy() != Float.NaN) {
+            serializer.startTag(null, XML_TAGS.ALTITUDE_ACCURACY);
+            serializer.text(Float.toString(locationDescription.getAltitude_accuracy()));
+            serializer.endTag(null, XML_TAGS.ALTITUDE_ACCURACY);
+        }
     }
 
 

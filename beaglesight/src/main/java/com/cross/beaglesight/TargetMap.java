@@ -34,7 +34,6 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
@@ -69,7 +68,7 @@ import static android.view.View.GONE;
 import static com.cross.beaglesight.EditTarget.TARGET_KEY;
 
 public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, LocationListener, GoogleMap.OnCameraMoveStartedListener, GoogleMap.OnMarkerClickListener {
-    private static final int FILE_SELECT_CODE = 1;
+    static final int FILE_SELECT_CODE = 1;
     private static final int IMPORT_FILES = 2;
     private static final int TRACK_LOCATION = 3;
     private static final int ADD_TARGET = 4;

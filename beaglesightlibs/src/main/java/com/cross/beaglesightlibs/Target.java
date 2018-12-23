@@ -146,6 +146,10 @@ public class Target implements Parcelable {
         @Query("SELECT * FROM target WHERE builtin IS (:builtIn) ")
         List<Target> getAll(boolean builtIn);
 
+        @Transaction
+        @Query("SELECT * FROM target WHERE id IS (:id)")
+        Target getTarget(String id);
+
         @Insert(onConflict = REPLACE)
         void insert(Target target);
 

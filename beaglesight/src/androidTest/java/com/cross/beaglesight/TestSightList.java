@@ -28,6 +28,7 @@ import java.util.List;
 import androidx.test.espresso.intent.rule.IntentsTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import static android.app.Activity.RESULT_CANCELED;
 import static android.app.Activity.RESULT_OK;
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
@@ -73,7 +74,7 @@ public class TestSightList {
     }
 
     @Test
-    public void multiSelectTest() {
+    public void bowListRecyclerViewTest() {
         sightList = activityTestRule.getActivity();
 
         // Store first 3 entries
@@ -82,6 +83,19 @@ public class TestSightList {
         BowConfig bc1 = configs.get(1);
         BowConfig bc2 = configs.get(2);
 
+        // Test single select.
+        Intent intent = new Intent();
+        BowConfig bc = TestUtils.TestBowConfig();
+        intent.putExtra(CONFIG_TAG, bc);
+        Instrumentation.ActivityResult intentResult = new Instrumentation.ActivityResult(RESULT_OK, intent);
+
+        intending(anyIntent()).respondWith(intentResult);
+
+        onView(withIndex(withId(R.id.itemName), 0)).perform(click());
+
+        intended(allOf(hasComponent(ShowSight.class.getName()), hasExtra(CONFIG_TAG, bc0)));
+
+        // Test multi-select
         // Enter multiselect mode
         onView(withIndex(withId(R.id.itemName), 0)).perform(longClick());
 
@@ -105,37 +119,9 @@ public class TestSightList {
     }
 
     @Test
-    public void selectBow() {
-        sightList = activityTestRule.getActivity();
-        Intent intent = new Intent();
-        BowConfig bc = TestUtils.TestBowConfig();
-        intent.putExtra(CONFIG_TAG, bc);
-        Instrumentation.ActivityResult intentResult = new Instrumentation.ActivityResult(RESULT_OK, intent);
-
-        intending(anyIntent()).respondWith(intentResult);
-
-        List<BowConfig> configs = bm.getAllBowConfigsWithPositions();
-        BowConfig firstConfig = configs.get(0);
-
-        onView(withIndex(withId(R.id.itemName), 0)).perform(click());
-
-        intended(allOf(hasComponent(ShowSight.class.getName()), hasExtra(CONFIG_TAG, firstConfig)));
-    }
-
-    @Test
     public void exportBow()
     {
-        sightList = activityTestRule.getActivity();
-        Intent intent = new Intent();
-        BowConfig bc = TestUtils.TestBowConfig();
-        intent.putExtra(CONFIG_TAG, bc);
-        Instrumentation.ActivityResult dummyIntent = new Instrumentation.ActivityResult(RESULT_OK, intent);
-
-        intending(anyIntent()).respondWith(dummyIntent);
-
-        List<BowConfig> configs = bm.getAllBowConfigsWithPositions();
-        BowConfig firstConfig = configs.get(0);
-
+        intending(anyIntent()).respondWith(new Instrumentation.ActivityResult(RESULT_CANCELED, new Intent()));
         onView(withIndex(withId(R.id.itemName), 0)).perform(longClick());
         onView(withId(R.id.action_export)).perform(click());
         // To hard to validate the export intent, just forget about it.
@@ -144,7 +130,6 @@ public class TestSightList {
     @Test
     public void importBows() throws IOException, InterruptedException {
         sightList = activityTestRule.getActivity();
-
 
         Intent intent = new Intent();
         BowConfig bc = TestUtils.TestBowConfig();
