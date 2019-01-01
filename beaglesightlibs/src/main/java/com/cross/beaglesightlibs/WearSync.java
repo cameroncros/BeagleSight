@@ -20,7 +20,7 @@ public class WearSync {
     private PutDataMapRequest dataMapRequest = PutDataMapRequest.create(BOWCONFIGS);
     private boolean isPhone;
 
-    public WearSync(Context cont)
+    WearSync(Context cont)
     {
         this.isPhone = Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT_WATCH ||
                 !cont.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
@@ -28,7 +28,7 @@ public class WearSync {
         dataClient = Wearable.getDataClient(cont);
     }
 
-    public void addBowConfig(BowConfig bowConfig) {
+    void addBowConfig(BowConfig bowConfig) {
         if (isPhone) {
             DataMap dataMap = dataMapRequest.getDataMap();
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -45,7 +45,7 @@ public class WearSync {
         }
     }
 
-    public void removeBowConfig(BowConfig bowConfig) {
+    void removeBowConfig(BowConfig bowConfig) {
         if (isPhone) {
             DataMap dataMap = dataMapRequest.getDataMap();
             dataMap.remove(bowConfig.getId());

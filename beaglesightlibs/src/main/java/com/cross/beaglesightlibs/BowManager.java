@@ -15,6 +15,7 @@ public abstract class BowManager extends RoomDatabase {
     private static volatile BowManager instance;
     private static BowConfig.BowConfigDao bowConfigDao;
     private static PositionPair.PositionPairDao positionPairDao;
+    private WearSync wearSync;
 
     public abstract BowConfig.BowConfigDao bowConfigDao();
     public abstract PositionPair.PositionPairDao positionPairDao();
@@ -23,6 +24,7 @@ public abstract class BowManager extends RoomDatabase {
         synchronized (BowManager.class) {
             if (instance == null && cont != null) {
                 instance = Room.databaseBuilder(cont, BowManager.class, "bowconfigs").build();
+                instance.wearSync = new WearSync(cont);
                 bowConfigDao = instance.bowConfigDao();
                 positionPairDao = instance.positionPairDao();
             }
@@ -41,6 +43,7 @@ public abstract class BowManager extends RoomDatabase {
 
     public void deleteBowConfig(BowConfig bowConfig) {
         bowConfigDao.delete(bowConfig);
+        wearSync.removeBowConfig(bowConfig);
     }
 
     public void addBowConfig(BowConfig bowConfig) {
@@ -51,6 +54,8 @@ public abstract class BowManager extends RoomDatabase {
         {
             positionPairDao.insert(pair);
         }
+
+        wearSync.addBowConfig(bowConfig);
     }
 
     public BowConfig getBowConfig(String id) {
