@@ -113,6 +113,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
             MapsInitializer.initialize(getApplicationContext());
         } catch (Exception e) {
             e.printStackTrace();
+            finish();
         }
 
         mMapView.getMapAsync(this);
