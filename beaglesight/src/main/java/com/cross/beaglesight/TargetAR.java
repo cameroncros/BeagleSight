@@ -28,9 +28,13 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.MenuItem;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.cross.beaglesight.views.ARView;
+import com.cross.beaglesightlibs.BowConfig;
+import com.cross.beaglesightlibs.BowManager;
 import com.cross.beaglesightlibs.LocationDescription;
 import com.cross.beaglesightlibs.Target;
 import com.cross.beaglesightlibs.TargetManager;
@@ -38,6 +42,7 @@ import com.cross.beaglesightlibs.TargetManager;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NavUtils;
 import androidx.core.content.ContextCompat;
@@ -49,17 +54,6 @@ import androidx.core.content.ContextCompat;
 public class TargetAR extends AppCompatActivity implements SensorEventListener, LocationListener, SurfaceHolder.Callback {
     private static final int OPEN_CAMERA = 2;
     private static final int TRACK_LOCATION = 3;
-    /**
-     * Whether or not the system UI should be auto-hidden after
-     * {@link #AUTO_HIDE_DELAY_MILLIS} milliseconds.
-     */
-    private static final boolean AUTO_HIDE = true;
-
-    /**
-     * If {@link #AUTO_HIDE} is set, the number of milliseconds to wait after
-     * user interaction before hiding the system UI.
-     */
-    private static final int AUTO_HIDE_DELAY_MILLIS = 3000;
 
     /**
      * Some older devices needs a small delay between UI widget updates
@@ -102,34 +96,40 @@ public class TargetAR extends AppCompatActivity implements SensorEventListener, 
             hide();
         }
     };
-    /**
-     * Touch listener to use for in-layout UI controls to delay hiding the
-     * system UI. This is to prevent the jarring behavior of controls going away
-     * while interacting with activity UI.
-     */
-    private final View.OnTouchListener mDelayHideTouchListener = new View.OnTouchListener() {
-        @Override
-        public boolean onTouch(View view, MotionEvent motionEvent) {
-            if (AUTO_HIDE) {
-                delayedHide(AUTO_HIDE_DELAY_MILLIS);
-            }
-            return false;
-        }
-    };
     private SensorManager sensorManager;
     private LocationManager locationManager;
     private SurfaceView cameraView;
     private Camera camera;
+    private Spinner bowChooser;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_target_ar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
+
+        bowChooser = findViewById(R.id.selectedBow);
+        AsyncTask.execute(new Runnable() {
+            @Override
+            public void run() {
+                List<BowConfig> configs = BowManager.getInstance(TargetAR.this).getAllBowConfigsWithPositions();
+                final ArrayAdapter<BowConfig> adapter = new ArrayAdapter<>(TargetAR.this, android.R.layout.simple_spinner_item, configs);
+                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        bowChooser.setAdapter(adapter);
+                        bowChooser.invalidate();
+                    }
+                });
+            }
+        });
 
         mVisible = true;
         arView = findViewById(R.id.arView);

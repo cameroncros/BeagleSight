@@ -70,6 +70,7 @@ public class ShowSight extends AppCompatActivity implements SightGraph.SightGrap
         setContentView(R.layout.activity_show_sight);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         bm = BowManager.getInstance(ShowSight.this);
 
@@ -89,7 +90,6 @@ public class ShowSight extends AppCompatActivity implements SightGraph.SightGrap
                 startActivityForResult(addDistance, ADD_DISTANCE);
             }
         });
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         distance = findViewById(R.id.distanceText);
         position = findViewById(R.id.positionText);
