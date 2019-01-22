@@ -5,10 +5,10 @@ import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.hardware.SensorManager;
 import android.location.Location;
 import android.util.AttributeSet;
-import android.view.Surface;
 import android.view.View;
 
 import com.cross.beaglesight.BuildConfig;
@@ -45,7 +45,9 @@ public class ARView extends View {
     private static float[] orientationVals = new float[3];
 
     private double FOV = Math.PI / 3;
-    private Paint black;
+    private Paint black, white;
+    private Path arrowPath = new Path();
+    private Path rectPath = new Path();
 
     public ARView(Context context) {
         super(context);
@@ -75,6 +77,11 @@ public class ARView extends View {
         black.setStrokeWidth(2);
         black.setTextSize(40);
 
+        white = new Paint();
+        white.setColor(Color.WHITE);
+        white.setStrokeWidth(2);
+        white.setTextSize(40);
+
         if (!isInEditMode() && a != null) {
             a.recycle();
         }
@@ -102,6 +109,7 @@ public class ARView extends View {
 
     /**
      * Sets the Targets to use to draw the view.
+     *
      * @param targetList The list of Targets.
      */
     public void setTargets(List<Target> targetList) {
@@ -111,6 +119,7 @@ public class ARView extends View {
 
     /**
      * Set the current phone location
+     *
      * @param location
      */
     public void setLocation(Location location) {
@@ -120,6 +129,7 @@ public class ARView extends View {
 
     /**
      * Set the gravity values of the phone
+     *
      * @param values
      */
     public void updateGravity(float[] values) {
@@ -145,6 +155,7 @@ public class ARView extends View {
 
     /**
      * Update the current rotation of the phone
+     *
      * @param values
      */
     public void updateRotation(float[] values) {
@@ -206,7 +217,7 @@ public class ARView extends View {
             double yPixelDiff = pitchDiff * (contentWidthEnd - contentWidthStart) / FOV;
 
             // Rotate pixel locations.
-            double rotation = phoneRotation + viewRotation - Math.PI/2;
+            double rotation = phoneRotation + viewRotation - Math.PI / 2;
             double xPixelRot = (Math.cos(rotation) * xPixelDiff) + (Math.sin(rotation) * yPixelDiff);
             double yPixelRot = (Math.sin(rotation) * xPixelDiff) - (Math.cos(rotation) * yPixelDiff);
 
@@ -214,8 +225,59 @@ public class ARView extends View {
             double xPixel = -xPixelRot + (contentWidthEnd - contentWidthStart) / 2;
             double yPixel = -yPixelRot + (contentHeightEnd - contentHeightStart) / 2;
 
-            canvas.drawCircle((float) xPixel, (float) yPixel, 10, black);
+            drawSign(canvas, (float) xPixel, (float) yPixel, rotation, target);
         }
+    }
+
+    private void drawSign(Canvas canvas, float x, float y, double rot, RenderableTarget target) {
+        canvas.drawCircle(x, y, 10, black);
+
+        int arrowHeight = emToPixel(4);
+
+        // Calculate box width
+        float boxWidth = white.measureText(target.target.getName());
+        String distanceString = String.format(Locale.ENGLISH, "Dist: %.02f", target.distance);
+        float distanceWidth = white.measureText(distanceString);
+        if (distanceWidth > boxWidth) {
+            boxWidth = distanceWidth;
+        }
+        // Add margin
+        boxWidth += 2 * emToPixel(4);
+
+
+        // Calculate box height
+        float textHeight = white.descent() - white.ascent();
+        float boxHeight = 2 * (textHeight + emToPixel(4)) + emToPixel(4);
+
+        // Draw arrow:
+        arrowPath.reset();
+        arrowPath.moveTo(x, y);
+        arrowPath.lineTo(x + arrowHeight / 2, y + arrowHeight);
+        arrowPath.lineTo(x - arrowHeight / 2, y + arrowHeight);
+        arrowPath.close();
+        canvas.drawPath(arrowPath, white);
+
+        // Draw rectangle
+        rectPath.reset();
+        rectPath.moveTo(x - boxWidth / 2, y + arrowHeight);
+        rectPath.lineTo(x + boxWidth / 2, y + arrowHeight);
+        rectPath.lineTo(x + boxWidth / 2, y + arrowHeight + boxHeight);
+        rectPath.lineTo(x - boxWidth / 2, y + arrowHeight + boxHeight);
+        rectPath.close();
+        canvas.drawPath(rectPath, white);
+
+        // Draw targetName
+        canvas.drawText(target.target.getName(), x - boxWidth / 2 + emToPixel(4), y + arrowHeight + emToPixel(4) + textHeight, black);
+
+        // Draw distance
+        canvas.drawText(distanceString, x - boxWidth / 2 + emToPixel(4), y + arrowHeight + (emToPixel(4) + textHeight) * 2, black);
+
+        // Optional TODO: Draw bow settings
+    }
+
+    private int emToPixel(int i) {
+        // TODO: Do actual math here.
+        return 30;
     }
 
     public void setViewRotation(double rotation) {

@@ -188,7 +188,9 @@ public class TargetAR extends AppCompatActivity implements SensorEventListener, 
     @Override
     public void onPause() {
         super.onPause();
-        camera.stopPreview();
+        if (camera != null) {
+            camera.stopPreview();
+        }
         synchronized (this) {
             locationManager.removeUpdates(this);
             sensorManager.unregisterListener(this);
