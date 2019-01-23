@@ -1,6 +1,7 @@
 package com.cross.beaglesight.views;
 
 import android.content.Context;
+import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -230,9 +231,7 @@ public class ARView extends View {
     }
 
     private void drawSign(Canvas canvas, float x, float y, double rot, RenderableTarget target) {
-        canvas.drawCircle(x, y, 10, black);
-
-        int arrowHeight = emToPixel(4);
+        int arrowHeight = dpToPixel(8);
 
         // Calculate box width
         float boxWidth = white.measureText(target.target.getName());
@@ -242,12 +241,11 @@ public class ARView extends View {
             boxWidth = distanceWidth;
         }
         // Add margin
-        boxWidth += 2 * emToPixel(4);
-
+        boxWidth += 2 * dpToPixel(8);
 
         // Calculate box height
         float textHeight = white.descent() - white.ascent();
-        float boxHeight = 2 * (textHeight + emToPixel(4)) + emToPixel(4);
+        float boxHeight = dpToPixel(8) + 2 * (textHeight + dpToPixel(8)) + dpToPixel(8);
 
         // Draw arrow:
         arrowPath.reset();
@@ -267,17 +265,16 @@ public class ARView extends View {
         canvas.drawPath(rectPath, white);
 
         // Draw targetName
-        canvas.drawText(target.target.getName(), x - boxWidth / 2 + emToPixel(4), y + arrowHeight + emToPixel(4) + textHeight, black);
+        canvas.drawText(target.target.getName(), x - boxWidth / 2 + dpToPixel(8), y + arrowHeight + dpToPixel(8) + textHeight, black);
 
         // Draw distance
-        canvas.drawText(distanceString, x - boxWidth / 2 + emToPixel(4), y + arrowHeight + (emToPixel(4) + textHeight) * 2, black);
+        canvas.drawText(distanceString, x - boxWidth / 2 + dpToPixel(8), y + arrowHeight + (dpToPixel(8) + textHeight) * 2, black);
 
         // Optional TODO: Draw bow settings
     }
 
-    private int emToPixel(int i) {
-        // TODO: Do actual math here.
-        return 30;
+    private int dpToPixel(int dp) {
+        return (int) (dp * Resources.getSystem().getDisplayMetrics().density);
     }
 
     public void setViewRotation(double rotation) {
