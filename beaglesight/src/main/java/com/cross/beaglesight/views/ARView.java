@@ -7,6 +7,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.RectF;
 import android.hardware.SensorManager;
 import android.location.Location;
 import android.util.AttributeSet;
@@ -48,7 +49,8 @@ public class ARView extends View {
     private double FOV = Math.PI / 3;
     private Paint black, white;
     private Path arrowPath = new Path();
-    private Path rectPath = new Path();
+    private RectF rectPath = new RectF();
+    private float density = Resources.getSystem().getDisplayMetrics().density;
 
     public ARView(Context context) {
         super(context);
@@ -226,11 +228,11 @@ public class ARView extends View {
             double xPixel = -xPixelRot + (contentWidthEnd - contentWidthStart) / 2;
             double yPixel = -yPixelRot + (contentHeightEnd - contentHeightStart) / 2;
 
-            drawSign(canvas, (float) xPixel, (float) yPixel, rotation, target);
+            drawSign(canvas, (float) xPixel, (float) yPixel, target);
         }
     }
 
-    private void drawSign(Canvas canvas, float x, float y, double rot, RenderableTarget target) {
+    private void drawSign(Canvas canvas, float x, float y, RenderableTarget target) {
         int arrowHeight = dpToPixel(8);
 
         // Calculate box width
@@ -256,13 +258,11 @@ public class ARView extends View {
         canvas.drawPath(arrowPath, white);
 
         // Draw rectangle
-        rectPath.reset();
-        rectPath.moveTo(x - boxWidth / 2, y + arrowHeight);
-        rectPath.lineTo(x + boxWidth / 2, y + arrowHeight);
-        rectPath.lineTo(x + boxWidth / 2, y + arrowHeight + boxHeight);
-        rectPath.lineTo(x - boxWidth / 2, y + arrowHeight + boxHeight);
-        rectPath.close();
-        canvas.drawPath(rectPath, white);
+        rectPath.bottom = y + arrowHeight + boxHeight;
+        rectPath.top = y + arrowHeight;
+        rectPath.left = x - boxWidth / 2;
+        rectPath.right = x + boxWidth / 2;
+        canvas.drawRoundRect(rectPath, dpToPixel(8), dpToPixel(8), white);
 
         // Draw targetName
         canvas.drawText(target.target.getName(), x - boxWidth / 2 + dpToPixel(8), y + arrowHeight + dpToPixel(8) + textHeight, black);
@@ -274,7 +274,7 @@ public class ARView extends View {
     }
 
     private int dpToPixel(int dp) {
-        return (int) (dp * Resources.getSystem().getDisplayMetrics().density);
+        return (int) (dp * density);
     }
 
     public void setViewRotation(double rotation) {
