@@ -43,4 +43,5 @@
     <string name="title_activity_target_ar">TargetAR</string>
     <string name="dummy_button">Dummy Button</string>
     <string name="dummy_content">DUMMY\nCONTENT</string>
+    <string name="no_bow_selected">No Bow Selected</string>
 </resources>

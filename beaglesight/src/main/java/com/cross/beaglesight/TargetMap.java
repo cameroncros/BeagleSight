@@ -20,11 +20,16 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.cross.beaglesight.views.BowConfigAdapter;
+import com.cross.beaglesightlibs.BowConfig;
+import com.cross.beaglesightlibs.BowManager;
 import com.cross.beaglesightlibs.LocationDescription;
 import com.cross.beaglesightlibs.Target;
 import com.cross.beaglesightlibs.TargetManager;
@@ -91,6 +96,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
     private boolean isTracking = false;
     private ImageButton editButton;
     private ImageButton deleteButton;
+    private BowConfig selectedBow;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -150,6 +156,33 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
 
         editButton = findViewById(R.id.editButton);
         deleteButton = findViewById(R.id.deleteButton);
+
+        final Spinner bowChooser = findViewById(R.id.selectedBow);
+        AsyncTask.execute(new Runnable() {
+            @Override
+            public void run() {
+                List<BowConfig> configs = BowManager.getInstance(TargetMap.this).getAllBowConfigsWithPositions();
+                final BowConfigAdapter adapter = new BowConfigAdapter(configs);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        bowChooser.setAdapter(adapter);
+                        bowChooser.invalidate();
+                    }
+                });
+            }
+        });
+        bowChooser.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                selectedBow = (BowConfig)adapterView.getSelectedItem();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+                selectedBow = null;
+            }
+        });
     }
 
     @SuppressLint("MissingPermission")
@@ -309,10 +342,19 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
     }
 
     private String getStats(LocationDescription shootLocation,
-                            LocationDescription targetLocation) {
-        return String.format(Locale.ENGLISH, "Distance: %.2fm Pitch: %.2f°",
+                            LocationDescription targetLocation,
+                            BowConfig selectedBow) {
+        String stats = String.format(Locale.ENGLISH, "Distance: %.2fm Pitch: %.2f° ",
                 shootLocation.distanceTo(targetLocation),
                 shootLocation.pitchTo(targetLocation));
+        if (selectedBow != null)
+        {
+            float distance = (float)shootLocation.distanceTo(targetLocation);
+            float pin = selectedBow.getPositionCalculator().calcPosition(distance);
+            String pinSetting = String.format(Locale.ENGLISH, "Pin: %.1f", pin);
+            stats = stats + pinSetting;
+        }
+        return stats;
     }
 
     private void renderTargets() {
@@ -469,14 +511,14 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         if (selectedShootLocation != null && selectedTarget != null) {
             targetInfo.setVisibility(View.VISIBLE);
             targetDescription.setText(selectedShootLocation.getDescription());
-            targetDistance.setText(getStats(selectedShootLocation, selectedTarget.getTargetLocation()));
+            targetDistance.setText(getStats(selectedShootLocation, selectedTarget.getTargetLocation(), selectedBow));
         } else if (selectedTarget != null) {
             LocationDescription targetLocation = selectedTarget.getTargetLocation();
             targetInfo.setVisibility(View.VISIBLE);
             targetDescription.setText(targetLocation.getDescription());
             if (currentLocation != null) {
                 LocationDescription currentShootLocation = new LocationDescription(currentLocation);
-                targetDistance.setText(getStats(currentShootLocation, targetLocation));
+                targetDistance.setText(getStats(currentShootLocation, targetLocation, selectedBow));
             } else {
                 targetDistance.setText(R.string.waiting_for_location);
             }

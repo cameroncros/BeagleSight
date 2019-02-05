@@ -15,6 +15,7 @@ import android.view.View;
 
 import com.cross.beaglesight.BuildConfig;
 import com.cross.beaglesight.R;
+import com.cross.beaglesightlibs.BowConfig;
 import com.cross.beaglesightlibs.Target;
 
 import java.util.ArrayList;
@@ -51,6 +52,8 @@ public class ARView extends View {
     private Path arrowPath = new Path();
     private RectF rectPath = new RectF();
     private float density = Resources.getSystem().getDisplayMetrics().density;
+
+    private BowConfig selectedBow;
 
     public ARView(Context context) {
         super(context);
@@ -238,9 +241,19 @@ public class ARView extends View {
         // Calculate box width
         float boxWidth = white.measureText(target.target.getName());
         String distanceString = String.format(Locale.ENGLISH, "Dist: %.02f", target.distance);
+        String pinString = null;
+        float pinWidth = 0;
+        if (selectedBow != null) {
+            pinString = String.format(Locale.ENGLISH, "Pin: %.02f", selectedBow.getPositionCalculator().calcPosition((float) target.distance));
+            pinWidth = white.measureText(pinString);
+        }
         float distanceWidth = white.measureText(distanceString);
         if (distanceWidth > boxWidth) {
             boxWidth = distanceWidth;
+        }
+        if (pinWidth > boxWidth)
+        {
+            boxWidth = pinWidth;
         }
         // Add margin
         boxWidth += 2 * dpToPixel(8);
@@ -248,6 +261,10 @@ public class ARView extends View {
         // Calculate box height
         float textHeight = white.descent() - white.ascent();
         float boxHeight = dpToPixel(8) + 2 * (textHeight + dpToPixel(8)) + dpToPixel(8);
+        if (pinString != null)
+        {
+            boxHeight += textHeight + dpToPixel(8);
+        }
 
         // Draw arrow:
         arrowPath.reset();
@@ -270,7 +287,11 @@ public class ARView extends View {
         // Draw distance
         canvas.drawText(distanceString, x - boxWidth / 2 + dpToPixel(8), y + arrowHeight + (dpToPixel(8) + textHeight) * 2, black);
 
-        // Optional TODO: Draw bow settings
+        // Optional draw pin settings.
+        if (pinString != null)
+        {
+            canvas.drawText(pinString, x - boxWidth / 2 + dpToPixel(8), y + arrowHeight + (dpToPixel(8) + textHeight) * 3, black);
+        }
     }
 
     private int dpToPixel(int dp) {
@@ -279,6 +300,10 @@ public class ARView extends View {
 
     public void setViewRotation(double rotation) {
         viewRotation = rotation;
+    }
+
+    public void setSelectedBow(BowConfig selectedBow) {
+        this.selectedBow = selectedBow;
     }
 
     class RenderableTarget {

@@ -28,11 +28,13 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.MenuItem;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.cross.beaglesight.views.ARView;
+import com.cross.beaglesight.views.BowConfigAdapter;
 import com.cross.beaglesightlibs.BowConfig;
 import com.cross.beaglesightlibs.BowManager;
 import com.cross.beaglesightlibs.LocationDescription;
@@ -119,8 +121,7 @@ public class TargetAR extends AppCompatActivity implements SensorEventListener, 
             @Override
             public void run() {
                 List<BowConfig> configs = BowManager.getInstance(TargetAR.this).getAllBowConfigsWithPositions();
-                final ArrayAdapter<BowConfig> adapter = new ArrayAdapter<>(TargetAR.this, android.R.layout.simple_spinner_item, configs);
-                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                final BowConfigAdapter adapter = new BowConfigAdapter(configs);
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -128,6 +129,17 @@ public class TargetAR extends AppCompatActivity implements SensorEventListener, 
                         bowChooser.invalidate();
                     }
                 });
+            }
+        });
+        bowChooser.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                arView.setSelectedBow((BowConfig)adapterView.getSelectedItem());
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+                arView.setSelectedBow(null);
             }
         });
 
