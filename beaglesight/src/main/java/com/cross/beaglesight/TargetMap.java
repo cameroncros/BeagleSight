@@ -162,7 +162,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
             @Override
             public void run() {
                 List<BowConfig> configs = BowManager.getInstance(TargetMap.this).getAllBowConfigsWithPositions();
-                final BowConfigAdapter adapter = new BowConfigAdapter(configs);
+                final BowConfigAdapter adapter = new BowConfigAdapter(configs, getResources().getColor(R.color.colorPrimaryDark));
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {

@@ -1,11 +1,10 @@
 package com.cross.beaglesight.views;
 
-import android.content.Context;
 import android.database.DataSetObserver;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.SpinnerAdapter;
 import android.widget.TextView;
 
@@ -18,9 +17,11 @@ import androidx.annotation.NonNull;
 
 public class BowConfigAdapter implements SpinnerAdapter {
     List<BowConfig> bowConfigs;
+    int background;
 
-    public BowConfigAdapter(@NonNull List<BowConfig> objects) {
-        bowConfigs = objects;
+    public BowConfigAdapter(@NonNull List<BowConfig> bowConfigs, int background) {
+        this.bowConfigs = bowConfigs;
+        this.background = background;
     }
 
     @Override
@@ -32,7 +33,7 @@ public class BowConfigAdapter implements SpinnerAdapter {
         if (convertView == null) {
             View newView = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.bowlist_item, parent, false);
-            newView.setBackgroundColor(parent.getResources().getColor(R.color.colorPrimaryDark));
+            newView.setBackgroundColor(background);
             convertView = newView;
         }
 
