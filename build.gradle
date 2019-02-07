@@ -21,6 +21,6 @@ allprojects {
             name 'Google'
         }
     }
-    project.ext.set("versionCode", 22)
-    project.ext.set("versionName", "0.2.0")
+    project.ext.set("versionCode", 23)
+    project.ext.set("versionName", "0.2.1")
 }
