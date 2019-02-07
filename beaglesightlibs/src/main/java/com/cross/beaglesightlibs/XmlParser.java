@@ -263,6 +263,10 @@ public class XmlParser {
     }
 
     private static void serialisePositionPair(XmlSerializer serializer, PositionPair pair) throws IOException {
+        serializer.startTag(null, XML_TAGS.ID);
+        serializer.text(pair.getId());
+        serializer.endTag(null, XML_TAGS.ID);
+
         serializer.startTag(null, XML_TAGS.BOW_ID);
         serializer.text(pair.getBowId());
         serializer.endTag(null, XML_TAGS.BOW_ID);
