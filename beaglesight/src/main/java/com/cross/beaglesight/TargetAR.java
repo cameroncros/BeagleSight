@@ -28,6 +28,8 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.MenuItem;
+import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
@@ -48,6 +50,9 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NavUtils;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.OnApplyWindowInsetsListener;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -115,6 +120,14 @@ public class TargetAR extends AppCompatActivity implements SensorEventListener, 
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
+        ViewCompat.setOnApplyWindowInsetsListener(toolbar, new OnApplyWindowInsetsListener() {
+            @Override
+            public WindowInsetsCompat onApplyWindowInsets(View v, WindowInsetsCompat insets) {
+                ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+                params.topMargin = insets.getSystemWindowInsetTop();
+                return insets.consumeSystemWindowInsets();
+            }
+        });
 
         bowChooser = findViewById(R.id.selectedBow);
         AsyncTask.execute(new Runnable() {
