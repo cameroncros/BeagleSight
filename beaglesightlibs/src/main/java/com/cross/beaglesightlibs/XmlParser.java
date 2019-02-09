@@ -40,7 +40,6 @@ public class XmlParser {
 
         private static final String BOWS = "bows";
         private static final String BOW = "bow";
-        private static final String POSITIONPAIR = "positionpair";
         private static final String BOW_ID = "bowid";
         private static final String DISTANCE = "distance";
         private static final String POSITION = "position";
@@ -255,9 +254,9 @@ public class XmlParser {
         serializer.endTag(null, XML_TAGS.DESCRIPTION);
 
         for (PositionPair pair : bowConfig.getPositionArray()) {
-            serializer.startTag(null, XML_TAGS.POSITIONPAIR);
+            serializer.startTag(null, XML_TAGS.POSITION);
             serialisePositionPair(serializer, pair);
-            serializer.endTag(null, XML_TAGS.POSITIONPAIR);
+            serializer.endTag(null, XML_TAGS.POSITION);
         }
         serializer.endTag(null, XML_TAGS.BOW);
     }
