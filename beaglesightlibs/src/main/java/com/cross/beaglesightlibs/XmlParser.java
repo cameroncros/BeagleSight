@@ -178,9 +178,11 @@ public class XmlParser {
         serializer.text(locationDescription.getLocationId());
         serializer.endTag(null, XML_TAGS.ID);
 
-        serializer.startTag(null, XML_TAGS.TARGET_ID);
-        serializer.text(locationDescription.getTargetId());
-        serializer.endTag(null, XML_TAGS.TARGET_ID);
+        if (locationDescription.getTargetId() != null) {
+            serializer.startTag(null, XML_TAGS.TARGET_ID);
+            serializer.text(locationDescription.getTargetId());
+            serializer.endTag(null, XML_TAGS.TARGET_ID);
+        }
 
         if (locationDescription.getDescription() != null) {
             serializer.startTag(null, XML_TAGS.DESCRIPTION);
