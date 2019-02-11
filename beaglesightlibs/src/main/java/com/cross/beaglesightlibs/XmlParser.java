@@ -32,6 +32,7 @@ public class XmlParser {
         private static final String ALTITUDE = "altitude";
         private static final String LAT_LNG_ACCURACY = "lat_lng_accuracy";
         private static final String ALTITUDE_ACCURACY = "altitude_accuracy";
+        private static final String LOCK_STATUS = "lock_status";
         private static final String BUILTIN = "builtin";
         private static final String LOCATION = "location";
         private static final String SHOOT_POSITION = "shoot_position";
@@ -127,6 +128,9 @@ public class XmlParser {
                 case XML_TAGS.ALTITUDE_ACCURACY:
                     locDesc.setAltitude_accuracy(Float.parseFloat(nd.getTextContent()));
                     break;
+                case XML_TAGS.LOCK_STATUS:
+                    locDesc.setLockStatus(LockStatus.Status.valueOf(nd.getTextContent()));
+                    break;
             }
         }
         return locDesc;
@@ -213,6 +217,13 @@ public class XmlParser {
             serializer.text(Float.toString(locationDescription.getAltitude_accuracy()));
             serializer.endTag(null, XML_TAGS.ALTITUDE_ACCURACY);
         }
+
+        if (locationDescription.getLockStatus() != null) {
+            serializer.startTag(null, XML_TAGS.LOCK_STATUS);
+            serializer.text(locationDescription.getLockStatus().toString());
+            serializer.endTag(null, XML_TAGS.LOCK_STATUS);
+        }
+
     }
 
 

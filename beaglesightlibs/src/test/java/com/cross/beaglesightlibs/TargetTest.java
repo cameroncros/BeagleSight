@@ -118,6 +118,7 @@ public class TargetTest {
 
         locationDescription.setLatlng_accuracy(randomFloat());
         locationDescription.setAltitude_accuracy(randomFloat());
+        locationDescription.setLockStatus(LockStatus.Status.STRONG);
         return locationDescription;
     }
 

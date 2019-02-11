@@ -6,11 +6,16 @@ import android.util.Log;
 
 import java.util.List;
 
+import androidx.annotation.NonNull;
 import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
+import androidx.room.TypeConverters;
+import androidx.room.migration.Migration;
+import androidx.sqlite.db.SupportSQLiteDatabase;
 
-@Database(entities = {Target.class, LocationDescription.class}, version = 1)
+@Database(entities = {Target.class, LocationDescription.class}, version = 2)
+@TypeConverters({StatusTypeConverter.class})
 public abstract class TargetManager extends RoomDatabase {
     @SuppressLint("StaticFieldLeak")
     private static volatile TargetManager instance;
@@ -23,7 +28,19 @@ public abstract class TargetManager extends RoomDatabase {
     public static TargetManager getInstance(Context cont) {
         synchronized (TargetManager.class) {
             if (instance == null && cont != null) {
-                instance = Room.databaseBuilder(cont, TargetManager.class, "targets").build();
+                Migration MIGRATION_1_2 = new Migration(1, 2) {
+                    @Override
+                    public void migrate(@NonNull SupportSQLiteDatabase database) {
+                        database.execSQL("ALTER TABLE 'LocationDescription' ADD COLUMN 'lockStatus' TEXT");
+                        database.execSQL("UPDATE 'LocationDescription' SET 'lockStatus' = 'WEAK' WHERE 'lockStatus' is null");
+                        database.execSQL("ALTER TABLE 'Target' ADD COLUMN 'lockStatus' TEXT");
+                        database.execSQL("UPDATE 'Target' SET 'lockStatus' = 'WEAK' WHERE 'lockStatus' is null");
+                    }
+                };
+
+                instance = Room.databaseBuilder(cont, TargetManager.class, "targets")
+                        .addMigrations(MIGRATION_1_2)
+                        .build();
 
                 targetDao = instance.targetDao();
                 locationDescriptionDao = instance.locationDescriptionDao();

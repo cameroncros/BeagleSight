@@ -24,6 +24,7 @@ import androidx.room.Index;
 import androidx.room.Insert;
 import androidx.room.PrimaryKey;
 import androidx.room.Query;
+import androidx.room.TypeConverter;
 
 import static androidx.room.ForeignKey.CASCADE;
 import static androidx.room.OnConflictStrategy.REPLACE;
@@ -44,6 +45,7 @@ public class LocationDescription implements Parcelable {
     private float latlng_accuracy;
     private double altitude;
     private float altitude_accuracy;
+    private LockStatus.Status lockStatus;
 
     @ColumnInfo(name = "location_description")
     private String description;
@@ -52,7 +54,7 @@ public class LocationDescription implements Parcelable {
         this.locationId = UUID.randomUUID().toString();
     }
 
-    public LocationDescription(Location location, String description) {
+    public LocationDescription(Location location, String description, LockStatus.Status status) {
         super();
         this.latitude = location.getLatitude();
         this.longitude = location.getLongitude();
@@ -62,6 +64,7 @@ public class LocationDescription implements Parcelable {
             this.altitude_accuracy = location.getVerticalAccuracyMeters();
         }
         this.description = description;
+        this.lockStatus = status;
 
     }
 
@@ -78,22 +81,23 @@ public class LocationDescription implements Parcelable {
                 Float.compare(that.altitude_accuracy, altitude_accuracy) == 0 &&
                 Objects.equals(locationId, that.locationId) &&
                 Objects.equals(targetId, that.targetId) &&
-                Objects.equals(description, that.description);
+                Objects.equals(description, that.description) &&
+                Objects.equals(lockStatus, that.lockStatus);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
     public int hashCode() {
 
-        return Objects.hash(locationId, targetId, latitude, longitude, latlng_accuracy, altitude, altitude_accuracy, description);
+        return Objects.hash(locationId, targetId, latitude, longitude, latlng_accuracy, altitude, altitude_accuracy, description, lockStatus);
     }
 
     public LocationDescription(Location currentLocation) {
-        this(currentLocation, "");
+        this(currentLocation, "", LockStatus.Status.WEAK);
     }
 
     public LocationDescription(Parcel in) {
-        String[] data = new String[8];
+        String[] data = new String[9];
 
         in.readStringArray(data);
         // the order needs to be the same as in writeToParcel() method
@@ -107,6 +111,9 @@ public class LocationDescription implements Parcelable {
         this.locationId = data[5];
         this.targetId = data[6];
         this.description = data[7];
+        if (data[8] != null) {
+            this.lockStatus = LockStatus.Status.valueOf(data[8]);
+        }
     }
 
     public static final Creator<LocationDescription> CREATOR = new Creator<LocationDescription>() {
@@ -189,6 +196,14 @@ public class LocationDescription implements Parcelable {
         this.description = description;
     }
 
+    public LockStatus.Status getLockStatus() {
+        return lockStatus;
+    }
+
+    public void setLockStatus(LockStatus.Status  lockStatus) {
+        this.lockStatus = lockStatus;
+    }
+
     /**
      * Get the distance to a location
      *
@@ -222,6 +237,11 @@ public class LocationDescription implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel parcel, int i) {
+        String lockStatusString = null;
+        if (this.lockStatus != null)
+        {
+            lockStatusString = this.lockStatus.toString();
+        }
         parcel.writeStringArray(new String[]{
                 Double.toString(this.latitude),
                 Double.toString(this.longitude),
@@ -233,6 +253,7 @@ public class LocationDescription implements Parcelable {
                 this.locationId,
                 this.targetId,
                 this.description,
+                lockStatusString
         });
     }
 
