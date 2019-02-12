@@ -7,7 +7,6 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
@@ -21,30 +20,25 @@ import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.Log;
-import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.MenuItem;
 import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.cross.beaglesight.views.ARView;
 import com.cross.beaglesight.views.BowConfigAdapter;
+import com.cross.beaglesight.views.LockStatusView;
 import com.cross.beaglesightlibs.BowConfig;
 import com.cross.beaglesightlibs.BowManager;
-import com.cross.beaglesightlibs.LocationDescription;
 import com.cross.beaglesightlibs.Target;
 import com.cross.beaglesightlibs.TargetManager;
 
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
 
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
@@ -69,6 +63,7 @@ public class TargetAR extends AppCompatActivity implements SensorEventListener, 
     private static final int UI_ANIMATION_DELAY = 300;
     private final Handler mHideHandler = new Handler();
     private ARView arView;
+    private LockStatusView lockStatusView;
     private final Runnable mHidePart2Runnable = new Runnable() {
         @SuppressLint("InlinedApi")
         @Override
@@ -158,6 +153,7 @@ public class TargetAR extends AppCompatActivity implements SensorEventListener, 
 
         mVisible = true;
         arView = findViewById(R.id.arView);
+        lockStatusView = findViewById(R.id.lockStatusView);
 
         cameraView = findViewById(R.id.cameraView);
 
@@ -262,6 +258,7 @@ public class TargetAR extends AppCompatActivity implements SensorEventListener, 
     @Override
     public void onLocationChanged(Location location) {
         arView.setLocation(location);
+        lockStatusView.updateLocation(location);
     }
 
     @Override

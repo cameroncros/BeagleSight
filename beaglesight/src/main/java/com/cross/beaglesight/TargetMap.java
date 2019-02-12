@@ -28,6 +28,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.cross.beaglesight.views.BowConfigAdapter;
+import com.cross.beaglesight.views.LockStatusView;
 import com.cross.beaglesightlibs.BowConfig;
 import com.cross.beaglesightlibs.BowManager;
 import com.cross.beaglesightlibs.LocationDescription;
@@ -90,6 +91,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
     private View targetInfo;
     private TextView targetDescription;
     private TextView targetDistance;
+    private LockStatusView lockStatusView;
     private LocationDescription selectedShootLocation = null;
     private Target selectedTarget = null;
     private ProgressDialog mProgressDialog;
@@ -129,6 +131,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         tm = TargetManager.getInstance(this);
 
         progressBar = findViewById(R.id.fabProgress);
+        lockStatusView = findViewById(R.id.lockStatusView);
 
         refocusButton = findViewById(R.id.refocus);
         refocusButton.setOnClickListener(new View.OnClickListener() {
@@ -425,6 +428,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
 
     @Override
     public void onLocationChanged(Location location) {
+        lockStatusView.updateLocation(location);
         currentLocation = location;
         progressBar.setVisibility(View.GONE);
         progressBar.invalidate();

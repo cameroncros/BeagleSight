@@ -8,6 +8,7 @@
     tools:ignore="PrivateResource">
 
     <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/app_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:theme="@style/AppTheme.AppBarOverlay">
@@ -32,7 +33,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         app:layout_constraintBottom_toTopOf="@+id/targetInfo"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/app_bar" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/refocus"
@@ -66,6 +67,15 @@
         android:indeterminateTint="@color/colorPrimary"
         app:layout_constraintBottom_toTopOf="@+id/arMode"
         app:layout_constraintEnd_toEndOf="parent" />
+
+    <com.cross.beaglesight.views.LockStatusView
+        android:id="@+id/lockStatusView"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:layout_margin="16dp"
+        android:layout_marginTop="8dp"
+        app:layout_constraintStart_toStartOf="@+id/map"
+        app:layout_constraintTop_toBottomOf="@+id/app_bar" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/targetInfo"
