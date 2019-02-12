@@ -4,8 +4,17 @@ import android.location.Location;
 
 import androidx.room.TypeConverter;
 
+import static com.cross.beaglesightlibs.LockStatus.Status.MEDIUM;
+import static com.cross.beaglesightlibs.LockStatus.Status.STRONG;
+import static com.cross.beaglesightlibs.LockStatus.Status.WEAK;
+
 public class LockStatus {
     private Location lastLocation;
+    private Status status = WEAK;
+
+    public Status getStatus() {
+        return status;
+    }
 
     public enum Status {
         WEAK,
@@ -15,10 +24,11 @@ public class LockStatus {
 
     public Status updateLocation(Location location)
     {
+        status = WEAK;
         if (lastLocation == null)
         {
             lastLocation = location;
-            return Status.WEAK;
+            return status;
         }
 
         double driftx = Math.abs(lastLocation.getLatitude() - location.getLatitude());
@@ -29,14 +39,14 @@ public class LockStatus {
 
         if (driftTotal < 0.000001 && location.getAccuracy() < 5)
         {
-            return Status.STRONG;
+            status = STRONG;
         }
 
         if (driftTotal < 0.000001 || location.getAccuracy() < 5)
         {
-            return Status.MEDIUM;
+            status = MEDIUM;
         }
 
-        return Status.WEAK;
+        return status;
     }
 }
