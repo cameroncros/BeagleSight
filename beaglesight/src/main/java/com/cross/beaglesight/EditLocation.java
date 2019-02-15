@@ -15,6 +15,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import com.cross.beaglesight.views.LockStatusView;
 import com.cross.beaglesightlibs.LocationDescription;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -37,6 +38,7 @@ public class EditLocation extends AppCompatActivity implements LocationListener 
     private TextView latitude_accuracy;
     private TextView altitude_accuracy;
     private EditText description;
+    private LockStatusView lockStatusView;
     private boolean updateLocation = true;
 
     private DecimalFormat gpsFormatter = new DecimalFormat("####0.000000");
@@ -61,6 +63,7 @@ public class EditLocation extends AppCompatActivity implements LocationListener 
         longitude_accuracy = findViewById(R.id.longitude_accuracy);
         latitude_accuracy = findViewById(R.id.latitude_accuracy);
         altitude_accuracy = findViewById(R.id.altitude_accuracy);
+	lockStatusView = findViewById(R.id.lockStatusView);
 
         description = findViewById(R.id.description);
 
@@ -158,6 +161,8 @@ public class EditLocation extends AppCompatActivity implements LocationListener 
     @Override
     public void onLocationChanged(Location location) {
         if (updateLocation) {
+            locationDescription.setLockStatus(lockStatusView.updateLocation(location));
+	    lockStatusView.invalidate();
             locationDescription.setLongitude(location.getLongitude());
             locationDescription.setLatitude(location.getLatitude());
             locationDescription.setAltitude(location.getAltitude());

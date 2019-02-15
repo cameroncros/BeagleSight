@@ -90,7 +90,7 @@ public class LockStatusView extends View {
                 temp);
     }
 
-    public void updateLocation(Location location) {
-        this.lockStatus.updateLocation(location);
+    public LockStatus.Status updateLocation(Location location) {
+        return this.lockStatus.updateLocation(location);
     }
 }
