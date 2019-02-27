@@ -431,6 +431,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
     @Override
     public void onLocationChanged(Location location) {
         lockStatusView.updateLocation(location);
+        lockStatusView.invalidate();
         currentLocation = location;
         progressBar.setVisibility(View.GONE);
         progressBar.invalidate();

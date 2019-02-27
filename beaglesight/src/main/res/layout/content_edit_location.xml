@@ -152,4 +152,13 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:srcCompat="@drawable/ic_save_white_24dp" />
 
+    <com.cross.beaglesight.views.LockStatusView
+        android:id="@+id/lockStatusView"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:layout_marginEnd="8dp"
+        app:layout_constraintBottom_toBottomOf="@+id/lock_location"
+        app:layout_constraintEnd_toStartOf="@+id/lock_location"
+        app:layout_constraintTop_toTopOf="@+id/lock_location" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -63,7 +63,7 @@ public class EditLocation extends AppCompatActivity implements LocationListener 
         longitude_accuracy = findViewById(R.id.longitude_accuracy);
         latitude_accuracy = findViewById(R.id.latitude_accuracy);
         altitude_accuracy = findViewById(R.id.altitude_accuracy);
-	lockStatusView = findViewById(R.id.lockStatusView);
+        lockStatusView = findViewById(R.id.lockStatusView);
 
         description = findViewById(R.id.description);
 
@@ -162,7 +162,7 @@ public class EditLocation extends AppCompatActivity implements LocationListener 
     public void onLocationChanged(Location location) {
         if (updateLocation) {
             locationDescription.setLockStatus(lockStatusView.updateLocation(location));
-	    lockStatusView.invalidate();
+            lockStatusView.invalidate();
             locationDescription.setLongitude(location.getLongitude());
             locationDescription.setLatitude(location.getLatitude());
             locationDescription.setAltitude(location.getAltitude());
@@ -176,6 +176,7 @@ public class EditLocation extends AppCompatActivity implements LocationListener 
     }
 
     private void fillViews(LocationDescription location) {
+        lockStatusView.setStatus(location.getLockStatus());
         longitude.setText(gpsFormatter.format(location.getLongitude()));
         latitude.setText(gpsFormatter.format(location.getLatitude()));
         altitude.setText(altFormatter.format(location.getAltitude()));
@@ -185,6 +186,7 @@ public class EditLocation extends AppCompatActivity implements LocationListener 
             altitude_accuracy.setText(String.format(getString(R.string.plus_minus), altFormatter.format(location.getAltitude_accuracy())));
         }
 
+        lockStatusView.invalidate();
         longitude.invalidate();
         latitude.invalidate();
         altitude.invalidate();

@@ -13,8 +13,10 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.cross.beaglesight.R;
+import com.cross.beaglesight.views.LockStatusView;
 import com.cross.beaglesightlibs.BowConfig;
 import com.cross.beaglesightlibs.LocationDescription;
+import com.cross.beaglesightlibs.LockStatus;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
@@ -99,6 +101,9 @@ public class LocationFragment extends Fragment implements OnMapReadyCallback {
 
             TextView description = view.findViewById(R.id.description);
             description.setText(locationDescription.getDescription());
+
+            LockStatusView lockStatusView = view.findViewById(R.id.lockStatusView);
+            lockStatusView.setStatus(locationDescription.getLockStatus());
         }
 
         MapView mapView = view.findViewById(R.id.mapView);
@@ -117,7 +122,6 @@ public class LocationFragment extends Fragment implements OnMapReadyCallback {
 
         ImageView imageView = view.findViewById(R.id.imageView);
         imageView.setVisibility(View.INVISIBLE);
-
 
         ImageButton editButton = view.findViewById(R.id.editButton);
         editButton.setOnClickListener(new View.OnClickListener() {

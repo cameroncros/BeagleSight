@@ -7,6 +7,15 @@
     android:orientation="horizontal"
     tools:context=".fragments.LocationFragment">
 
+
+    <com.cross.beaglesight.views.LockStatusView
+        android:id="@+id/lockStatusView"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:layout_margin="8dp"
+        app:layout_constraintStart_toEndOf="@+id/imageView"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <TextView
         android:id="@+id/latlong"
         android:layout_width="0dp"
@@ -18,7 +27,7 @@
         android:layout_marginRight="8dp"
         android:textStyle="bold"
         app:layout_constraintEnd_toStartOf="@+id/editButton"
-        app:layout_constraintStart_toEndOf="@+id/imageView"
+        app:layout_constraintStart_toEndOf="@+id/lockStatusView"
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView

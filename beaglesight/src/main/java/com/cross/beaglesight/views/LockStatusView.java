@@ -72,8 +72,7 @@ public class LockStatusView extends View {
 
         // Draw the circle
         Paint temp = null;
-        switch (status)
-        {
+        switch (status) {
             default:
             case WEAK:
                 temp = weakPaint;
@@ -97,6 +96,10 @@ public class LockStatusView extends View {
     }
 
     public void setStatus(LockStatus.Status lockStatus) {
-        this.status = lockStatus;
+        if (lockStatus == null) {
+            this.status = LockStatus.Status.WEAK;
+        } else {
+            this.status = lockStatus;
+        }
     }
 }
