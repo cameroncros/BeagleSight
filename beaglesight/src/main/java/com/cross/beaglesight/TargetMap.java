@@ -91,6 +91,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
     private View targetInfo;
     private TextView targetDescription;
     private TextView targetDistance;
+    private LockStatusView targetStatus;
     private LockStatusView lockStatusView;
     private LocationDescription selectedShootLocation = null;
     private Target selectedTarget = null;
@@ -113,6 +114,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
         targetInfo = findViewById(R.id.targetInfo);
         targetDescription = findViewById(R.id.targetDescription);
         targetDistance = findViewById(R.id.targetDistance);
+        targetStatus = findViewById(R.id.targetStatus);
 
         MapView mMapView = findViewById(R.id.map);
         mMapView.onCreate(savedInstanceState);
@@ -516,6 +518,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
             targetInfo.setVisibility(View.VISIBLE);
             targetDescription.setText(selectedShootLocation.getDescription());
             targetDistance.setText(getStats(selectedShootLocation, selectedTarget.getTargetLocation(), selectedBow));
+            targetStatus.setStatus(selectedShootLocation.getLockStatus());
         } else if (selectedTarget != null) {
             LocationDescription targetLocation = selectedTarget.getTargetLocation();
             targetInfo.setVisibility(View.VISIBLE);
@@ -526,6 +529,7 @@ public class TargetMap extends AppCompatActivity implements OnMapReadyCallback, 
             } else {
                 targetDistance.setText(R.string.waiting_for_location);
             }
+            targetStatus.setStatus(targetLocation.getLockStatus());
         } else {
             targetInfo.setVisibility(View.GONE);
         }

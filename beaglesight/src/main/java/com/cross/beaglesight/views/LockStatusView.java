@@ -16,6 +16,7 @@ import com.cross.beaglesightlibs.LockStatus;
  * Indicator View, shows when the GPS lock is stable.
  */
 public class LockStatusView extends View {
+    private LockStatus.Status status = LockStatus.Status.WEAK;
     private LockStatus lockStatus = new LockStatus();
 
     private Paint weakPaint;
@@ -71,7 +72,7 @@ public class LockStatusView extends View {
 
         // Draw the circle
         Paint temp = null;
-        switch (lockStatus.getStatus())
+        switch (status)
         {
             default:
             case WEAK:
@@ -91,6 +92,11 @@ public class LockStatusView extends View {
     }
 
     public LockStatus.Status updateLocation(Location location) {
-        return this.lockStatus.updateLocation(location);
+        status = this.lockStatus.updateLocation(location);
+        return status;
+    }
+
+    public void setStatus(LockStatus.Status lockStatus) {
+        this.status = lockStatus;
     }
 }
