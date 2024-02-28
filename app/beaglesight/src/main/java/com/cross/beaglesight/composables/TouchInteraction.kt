@@ -1,6 +1,6 @@
 package com.cross.beaglesight.composables
 
-import androidx.compose.foundation.gestures.forEachGesture
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.PointerEvent
@@ -13,14 +13,12 @@ sealed class TouchInteraction {
 }
 
 fun Modifier.touchInteraction(key: Any, block: (TouchInteraction) -> Unit): Modifier =
-    pointerInput(key) {
-        forEachGesture {
-            awaitPointerEventScope {
-                do {
-                    val event: PointerEvent = awaitPointerEvent()
+    this.pointerInput(key) {
+        awaitEachGesture {
+            do {
+                val event: PointerEvent = awaitPointerEvent()
 
-                    block(TouchInteraction.Move(event.changes.first().position))
-                } while (event.changes.any { it.pressed })
-            }
+                block(TouchInteraction.Move(event.changes.first().position))
+            } while (event.changes.any { it.pressed })
         }
     }
